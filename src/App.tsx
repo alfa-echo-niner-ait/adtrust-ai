@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import GenerateVideo from "./pages/GenerateVideo";
 import CritiqueAnalysis from "./pages/CritiqueAnalysis";
 import CritiqueResults from "./pages/CritiqueResults";
+import MigrationSetup from "./pages/MigrationSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/generate" element={<GenerateVideo />} />
               <Route path="/critique" element={<CritiqueAnalysis />} />
               <Route path="/results/:id" element={<CritiqueResults />} />
+              <Route path="/migration-setup" element={<MigrationSetup />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
