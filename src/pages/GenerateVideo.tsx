@@ -46,34 +46,39 @@ export default function GenerateVideo() {
       if (insertError) throw insertError;
       setCurrentVideoId(videoData.id);
 
-      // Simulate video generation - in production, this would call a video generation API
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Call Google video generation edge function
+      const { data: functionData, error: functionError } = await supabase.functions.invoke(
+        'generate-video-google',
+        {
+          body: {
+            videoId: videoData.id,
+            prompt: videoPrompt,
+            brandLogo: brandLogo,
+            productImage: productImage
+          }
+        }
+      );
 
-      // Mock generated video URL
-      const mockVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+      if (functionError) {
+        console.error('Edge function error:', functionError);
+        throw new Error(`Failed to generate video: ${functionError.message}`);
+      }
 
-      // Update record with generated video
-      const { error: updateError } = await supabase
-        .from('generated_videos')
-        .update({
-          video_url: mockVideoUrl,
-          status: 'completed'
-        })
-        .eq('id', videoData.id);
+      if (!functionData?.videoUrl) {
+        throw new Error('No video URL returned');
+      }
 
-      if (updateError) throw updateError;
-
-      setGeneratedVideoUrl(mockVideoUrl);
+      setGeneratedVideoUrl(functionData.videoUrl);
 
       toast({
         title: "Video Generated",
-        description: "Your video has been generated successfully.",
+        description: functionData.message || "Your video has been generated successfully.",
       });
     } catch (error) {
       console.error('Error generating video:', error);
       toast({
         title: "Generation Failed",
-        description: "Failed to generate video. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate video. Please try again.",
         variant: "destructive",
       });
 
