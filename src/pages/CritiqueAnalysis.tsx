@@ -129,11 +129,11 @@ export default function CritiqueAnalysis() {
               {/* Media Type Selection */}
               <Tabs value={mediaType} onValueChange={(v) => setMediaType(v as 'image' | 'video')} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="image" className="gap-2">
+                  <TabsTrigger value="image" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
                     <ImageIcon className="h-4 w-4" />
                     Image
                   </TabsTrigger>
-                  <TabsTrigger value="video" className="gap-2">
+                  <TabsTrigger value="video" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
                     <Video className="h-4 w-4" />
                     Video
                   </TabsTrigger>
@@ -143,11 +143,11 @@ export default function CritiqueAnalysis() {
               {/* Input Method Selection */}
               <Tabs value={inputMethod} onValueChange={(v) => setInputMethod(v as 'url' | 'upload')} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="url" className="gap-2">
+                  <TabsTrigger value="url" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
                     <Link2 className="h-4 w-4" />
                     URL
                   </TabsTrigger>
-                  <TabsTrigger value="upload" className="gap-2">
+                  <TabsTrigger value="upload" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
                     <Upload className="h-4 w-4" />
                     Upload File
                   </TabsTrigger>
