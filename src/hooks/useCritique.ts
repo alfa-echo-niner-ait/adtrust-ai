@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface CritiqueInput {
   mediaUrl: string;
   brandColors: string;
   caption: string;
+  mediaType?: string;
 }
 
 export interface CritiqueResult {
@@ -19,7 +21,7 @@ export function useCritique() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CritiqueResult | null>(null);
 
-  const runCritique = async (input: CritiqueInput) => {
+  const runCritique = async (input: CritiqueInput): Promise<string | null> => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -38,8 +40,30 @@ export function useCritique() {
       };
 
       setResult(mockResult);
+
+      // Save to database
+      const { data, error: dbError } = await supabase
+        .from('critiques')
+        .insert({
+          media_url: input.mediaUrl,
+          media_type: input.mediaType || 'image',
+          brand_colors: input.brandColors,
+          caption: input.caption,
+          brand_fit_score: mockResult.BrandFit_Score,
+          visual_quality_score: mockResult.VisualQuality_Score,
+          safety_score: mockResult.Safety_Score,
+          critique_summary: mockResult.Critique_Summary,
+          refinement_prompt: mockResult.Refinement_Prompt_Suggestion,
+        })
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      return data?.id || null;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during critique');
+      return null;
     } finally {
       setLoading(false);
     }
