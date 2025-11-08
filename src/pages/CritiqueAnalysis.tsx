@@ -11,6 +11,7 @@ import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function CritiqueAnalysis() {
   const location = useLocation();
@@ -103,6 +104,8 @@ export default function CritiqueAnalysis() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <Breadcrumb items={[{ label: "Critique Analysis" }]} />
+      
       <div className="space-y-8">
         <div>
           <h1 className="text-4xl font-bold text-gradient mb-2">Critique Analysis</h1>

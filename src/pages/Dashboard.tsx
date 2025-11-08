@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Video, FileText, TrendingUp, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface GeneratedVideo {
   id: string;
@@ -104,6 +105,8 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
+      <Breadcrumb items={[{ label: "Dashboard" }]} />
+      
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold">Creative AI Studio</h1>

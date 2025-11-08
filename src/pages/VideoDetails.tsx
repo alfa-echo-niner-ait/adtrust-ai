@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Calendar, Image } from "lucide-react";
 import { toast } from "sonner";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface VideoDetails {
   id: string;
@@ -104,6 +105,8 @@ const VideoDetails = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <Breadcrumb items={[{ label: "Videos", href: "/" }, { label: "Video Details" }]} />
+      
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => navigate("/")}>
           <ArrowLeft className="mr-2 h-4 w-4" />

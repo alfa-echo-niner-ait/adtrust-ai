@@ -8,6 +8,7 @@ import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X } from 'lucide
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function GenerateVideo() {
   const [videoPrompt, setVideoPrompt] = useState('');
@@ -131,6 +132,8 @@ export default function GenerateVideo() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <Breadcrumb items={[{ label: "Generate Video" }]} />
+      
       <div className="space-y-8">
         <div>
           <h1 className="text-4xl font-bold text-gradient mb-2">Generate Video</h1>

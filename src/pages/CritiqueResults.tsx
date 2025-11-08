@@ -6,6 +6,7 @@ import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Copy, CheckChe
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 interface CritiqueData {
   id: string;
@@ -90,8 +91,10 @@ export default function CritiqueResults() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="space-y-8">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <Breadcrumb items={[{ label: "Critiques", href: "/" }, { label: "Critique Results" }]} />
+      
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <Button
