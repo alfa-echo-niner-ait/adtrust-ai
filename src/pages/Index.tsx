@@ -4,25 +4,84 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Copy, CheckCheck } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Copy, CheckCheck, Video, Upload, Link2 } from 'lucide-react';
 import { useCritique } from '@/hooks/useCritique';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [inputMethod, setInputMethod] = useState<'url' | 'upload'>('url');
   const [mediaUrl, setMediaUrl] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [brandColors, setBrandColors] = useState('');
   const [caption, setCaption] = useState('');
   const [copied, setCopied] = useState(false);
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  
+  // Video generation inputs
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [brandLogo, setBrandLogo] = useState('');
+  const [productImage, setProductImage] = useState('');
   
   const { loading, error, result, runCritique } = useCritique();
   const { toast } = useToast();
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      // Create a temporary URL for preview/processing
+      const url = URL.createObjectURL(file);
+      setMediaUrl(url);
+    }
+  };
+
+  const handleGenerateVideo = async () => {
+    if (!videoPrompt || !brandLogo || !productImage) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide video prompt, brand logo, and product image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingVideo(true);
+    try {
+      // Simulate video generation - in production, this would call a video generation API
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Mock generated video URL
+      const generatedVideoUrl = 'https://example.com/generated-video.mp4';
+      setMediaUrl(generatedVideoUrl);
+      setMediaType('video');
+      setInputMethod('url');
+      
+      toast({
+        title: "Video Generated",
+        description: "Your video has been generated successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate video. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingVideo(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!mediaUrl || !brandColors || !caption) {
+    const mediaSource = inputMethod === 'url' ? mediaUrl : uploadedFile;
+    
+    if (!mediaSource || !brandColors || !caption) {
       toast({
         title: "Missing Information",
         description: "Please fill in all fields before running the critique.",
@@ -66,6 +125,92 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="space-y-8">
+          {/* Video Generation Section */}
+          <Card className="border-border shadow-lg bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Video className="h-5 w-5 text-primary" />
+                Video Generation (Optional)
+              </CardTitle>
+              <CardDescription>
+                Generate a 5-15 second video ad using AI (Google Veo, Runway, Pika Labs)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="videoPrompt" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Video Prompt
+                  </Label>
+                  <Textarea
+                    id="videoPrompt"
+                    placeholder="Describe the video ad you want to generate..."
+                    value={videoPrompt}
+                    onChange={(e) => setVideoPrompt(e.target.value)}
+                    disabled={generatingVideo}
+                    rows={3}
+                    className="bg-secondary/50 resize-none"
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="brandLogo" className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-primary" />
+                      Brand Logo URL
+                    </Label>
+                    <Input
+                      id="brandLogo"
+                      type="url"
+                      placeholder="https://example.com/logo.png"
+                      value={brandLogo}
+                      onChange={(e) => setBrandLogo(e.target.value)}
+                      disabled={generatingVideo}
+                      className="bg-secondary/50"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="productImage" className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-primary" />
+                      Product Image URL
+                    </Label>
+                    <Input
+                      id="productImage"
+                      type="url"
+                      placeholder="https://example.com/product.jpg"
+                      value={productImage}
+                      onChange={(e) => setProductImage(e.target.value)}
+                      disabled={generatingVideo}
+                      className="bg-secondary/50"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleGenerateVideo}
+                  disabled={generatingVideo}
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                  size="lg"
+                >
+                  {generatingVideo ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Generating Video...
+                    </>
+                  ) : (
+                    <>
+                      <Video className="h-5 w-5" />
+                      Generate Video
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Input Section */}
           <Card className="border-border shadow-lg">
             <CardHeader>
@@ -79,24 +224,86 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Media Type Selection */}
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Media Type
+                  </Label>
+                  <Tabs value={mediaType} onValueChange={(v) => setMediaType(v as 'image' | 'video')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="image" className="gap-2">
+                        <ImageIcon className="h-4 w-4" />
+                        Image
+                      </TabsTrigger>
+                      <TabsTrigger value="video" className="gap-2">
+                        <Video className="h-4 w-4" />
+                        Video
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                {/* Input Method Selection */}
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    Input Method
+                  </Label>
+                  <Tabs value={inputMethod} onValueChange={(v) => setInputMethod(v as 'url' | 'upload')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="url" className="gap-2">
+                        <Link2 className="h-4 w-4" />
+                        URL
+                      </TabsTrigger>
+                      <TabsTrigger value="upload" className="gap-2">
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
                 <div className="grid gap-6 md:grid-cols-2">
-                  {/* Media URL */}
+                  {/* Media Input */}
                   <div className="space-y-2">
-                    <Label htmlFor="mediaUrl" className="flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4 text-primary" />
-                      Image/Video URL
+                    <Label htmlFor="mediaInput" className="flex items-center gap-2">
+                      {mediaType === 'image' ? <ImageIcon className="h-4 w-4 text-primary" /> : <Video className="h-4 w-4 text-primary" />}
+                      {mediaType === 'image' ? 'Image' : 'Video'} {inputMethod === 'url' ? 'URL' : 'Upload'}
                     </Label>
-                    <Input
-                      id="mediaUrl"
-                      type="url"
-                      placeholder="https://example.com/ad-image.jpg"
-                      value={mediaUrl}
-                      onChange={(e) => setMediaUrl(e.target.value)}
-                      disabled={loading}
-                      className="bg-secondary/50"
-                    />
+                    
+                    {inputMethod === 'url' ? (
+                      <Input
+                        id="mediaInput"
+                        type="url"
+                        placeholder={`https://example.com/ad-${mediaType}.${mediaType === 'image' ? 'jpg' : 'mp4'}`}
+                        value={mediaUrl}
+                        onChange={(e) => setMediaUrl(e.target.value)}
+                        disabled={loading}
+                        className="bg-secondary/50"
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        <Input
+                          id="mediaInput"
+                          type="file"
+                          accept={mediaType === 'image' ? 'image/*' : 'video/*'}
+                          onChange={handleFileUpload}
+                          disabled={loading}
+                          className="bg-secondary/50"
+                        />
+                        {uploadedFile && (
+                          <p className="text-xs text-primary">
+                            Selected: {uploadedFile.name}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
                     <p className="text-xs text-muted-foreground">
-                      Provide a direct link to your ad image or video
+                      {inputMethod === 'url' 
+                        ? `Provide a direct link to your ad ${mediaType}`
+                        : `Upload your ad ${mediaType} file`
+                      }
                     </p>
                   </div>
 
