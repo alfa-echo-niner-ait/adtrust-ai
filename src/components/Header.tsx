@@ -1,5 +1,6 @@
 import { Shield } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const Header = () => {
   return (
@@ -16,30 +17,33 @@ export const Header = () => {
             </div>
           </NavLink>
 
-          <nav className="flex items-center gap-6">
-            <NavLink 
-              to="/" 
-              end
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              activeClassName="text-primary font-semibold"
-            >
-              Dashboard
-            </NavLink>
-            <NavLink 
-              to="/generate" 
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              activeClassName="text-primary font-semibold"
-            >
-              Generate Video
-            </NavLink>
-            <NavLink 
-              to="/critique" 
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              activeClassName="text-primary font-semibold"
-            >
-              Critique Ad
-            </NavLink>
-          </nav>
+          <div className="flex items-center gap-6">
+            <nav className="flex items-center gap-6">
+              <NavLink 
+                to="/" 
+                end
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                activeClassName="text-primary font-semibold"
+              >
+                Dashboard
+              </NavLink>
+              <NavLink 
+                to="/generate" 
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                activeClassName="text-primary font-semibold"
+              >
+                Generate Video
+              </NavLink>
+              <NavLink 
+                to="/critique" 
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                activeClassName="text-primary font-semibold"
+              >
+                Critique Ad
+              </NavLink>
+            </nav>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
