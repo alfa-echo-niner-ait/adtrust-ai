@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Video, Upload, Link2 } from 'lucide-react';
+import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Video, Upload, Link2, Plus, X } from 'lucide-react';
 import { useCritique } from '@/hooks/useCritique';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,9 @@ export default function CritiqueAnalysis() {
   const [inputMethod, setInputMethod] = useState<'url' | 'upload'>('url');
   const [mediaUrl, setMediaUrl] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [brandColors, setBrandColors] = useState('');
+  const [brandColors, setBrandColors] = useState<string[]>([]);
+  const [currentColor, setCurrentColor] = useState('#1E40AF');
+  const [hexInput, setHexInput] = useState('');
   const [caption, setCaption] = useState('');
   
   const { loading, error, result, runCritique } = useCritique();
@@ -42,15 +44,41 @@ export default function CritiqueAnalysis() {
     }
   };
 
+  const addColorFromPicker = () => {
+    if (currentColor && !brandColors.includes(currentColor)) {
+      setBrandColors([...brandColors, currentColor]);
+    }
+  };
+
+  const addColorFromHex = () => {
+    const hexPattern = /^#[0-9A-F]{6}$/i;
+    const colorValue = hexInput.startsWith('#') ? hexInput : `#${hexInput}`;
+    
+    if (hexPattern.test(colorValue) && !brandColors.includes(colorValue)) {
+      setBrandColors([...brandColors, colorValue]);
+      setHexInput('');
+    } else {
+      toast({
+        title: "Invalid Color",
+        description: "Please enter a valid HEX color code (e.g., #1E40AF)",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeColor = (colorToRemove: string) => {
+    setBrandColors(brandColors.filter(color => color !== colorToRemove));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const mediaSource = inputMethod === 'url' ? mediaUrl : uploadedFile;
     
-    if (!mediaSource || !brandColors || !caption) {
+    if (!mediaSource || brandColors.length === 0 || !caption) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields before running the critique.",
+        description: "Please fill in all fields and add at least one brand color.",
         variant: "destructive",
       });
       return;
@@ -58,7 +86,7 @@ export default function CritiqueAnalysis() {
 
     const critiqueId = await runCritique({ 
       mediaUrl, 
-      brandColors, 
+      brandColors: brandColors.join(', '), 
       caption,
       mediaType 
     });
@@ -173,22 +201,89 @@ export default function CritiqueAnalysis() {
                 </div>
 
                 {/* Brand Colors */}
-                <div className="space-y-2">
-                  <Label htmlFor="brandColors" className="flex items-center gap-2">
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
                     <Palette className="h-4 w-4 text-primary" />
-                    Brand Colors (HEX)
+                    Brand Colors
                   </Label>
-                  <Input
-                    id="brandColors"
-                    type="text"
-                    placeholder="#1E40AF, #3B82F6"
-                    value={brandColors}
-                    onChange={(e) => setBrandColors(e.target.value)}
-                    disabled={loading}
-                    className="bg-secondary/50"
-                  />
+                  
+                  {/* Color Picker */}
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <Input
+                        type="color"
+                        value={currentColor}
+                        onChange={(e) => setCurrentColor(e.target.value)}
+                        disabled={loading}
+                        className="w-16 h-10 cursor-pointer bg-secondary/50 border-border"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={addColorFromPicker}
+                      disabled={loading}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Color
+                    </Button>
+                  </div>
+
+                  {/* HEX Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Enter HEX (e.g., #1E40AF)"
+                      value={hexInput}
+                      onChange={(e) => setHexInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addColorFromHex())}
+                      disabled={loading}
+                      className="bg-secondary/50"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addColorFromHex}
+                      disabled={loading}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Selected Colors Display */}
+                  {brandColors.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Selected Colors:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {brandColors.map((color) => (
+                          <div
+                            key={color}
+                            className="group flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-secondary/50 hover:bg-secondary transition-colors"
+                          >
+                            <div
+                              className="w-5 h-5 rounded border border-border shadow-sm"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span className="text-sm font-mono">{color}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeColor(color)}
+                              disabled={loading}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <p className="text-xs text-muted-foreground">
-                    Enter your brand's primary color codes
+                    Select colors using the picker or enter HEX codes
                   </p>
                 </div>
               </div>
