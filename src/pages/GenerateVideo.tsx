@@ -4,26 +4,47 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Video, Loader2, Image as ImageIcon, Save, Eye } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 export default function GenerateVideo() {
   const [videoPrompt, setVideoPrompt] = useState('');
-  const [brandLogo, setBrandLogo] = useState('');
-  const [productImage, setProductImage] = useState('');
+  const [brandLogoUrl, setBrandLogoUrl] = useState('');
+  const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
+  const [productImageUrl, setProductImageUrl] = useState('');
+  const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const uploadFile = async (file: File, type: 'logo' | 'product'): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${type}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('video-assets')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('video-assets')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleGenerateVideo = async () => {
-    if (!videoPrompt || !brandLogo || !productImage) {
+    if (!videoPrompt.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide video prompt, brand logo, and product image.",
+        description: "Please provide a video prompt.",
         variant: "destructive",
       });
       return;
@@ -31,13 +52,24 @@ export default function GenerateVideo() {
 
     setGenerating(true);
     try {
+      let finalBrandLogoUrl = brandLogoUrl;
+      let finalProductImageUrl = productImageUrl;
+
+      // Upload files if provided
+      if (brandLogoFile) {
+        finalBrandLogoUrl = await uploadFile(brandLogoFile, 'logo');
+      }
+      if (productImageFile) {
+        finalProductImageUrl = await uploadFile(productImageFile, 'product');
+      }
+
       // Insert initial record
       const { data: videoData, error: insertError } = await supabase
         .from('generated_videos')
         .insert({
           prompt: videoPrompt,
-          brand_logo_url: brandLogo,
-          product_image_url: productImage,
+          brand_logo_url: finalBrandLogoUrl || null,
+          product_image_url: finalProductImageUrl || null,
           status: 'pending'
         })
         .select()
@@ -53,8 +85,8 @@ export default function GenerateVideo() {
           body: {
             videoId: videoData.id,
             prompt: videoPrompt,
-            brandLogo: brandLogo,
-            productImage: productImage
+            brandLogo: finalBrandLogoUrl || undefined,
+            productImage: finalProductImageUrl || undefined
           }
         }
       );
@@ -133,37 +165,103 @@ export default function GenerateVideo() {
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="brandLogo" className="flex items-center gap-2">
+                  <Label className="flex items-center gap-2">
                     <ImageIcon className="h-4 w-4 text-primary" />
-                    Brand Logo URL
+                    Brand Logo (Optional)
                   </Label>
-                  <Input
-                    id="brandLogo"
-                    type="url"
-                    placeholder="https://example.com/logo.png"
-                    value={brandLogo}
-                    onChange={(e) => setBrandLogo(e.target.value)}
-                    disabled={generating}
-                    className="bg-secondary/50"
-                  />
+                  <Tabs defaultValue="url" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="url">URL</TabsTrigger>
+                      <TabsTrigger value="upload">Upload</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="url" className="space-y-2">
+                      <Input
+                        type="url"
+                        placeholder="https://example.com/logo.png"
+                        value={brandLogoUrl}
+                        onChange={(e) => {
+                          setBrandLogoUrl(e.target.value);
+                          setBrandLogoFile(null);
+                        }}
+                        disabled={generating}
+                        className="bg-secondary/50"
+                      />
+                    </TabsContent>
+                    <TabsContent value="upload" className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setBrandLogoFile(file);
+                              setBrandLogoUrl('');
+                            }
+                          }}
+                          disabled={generating}
+                          className="bg-secondary/50"
+                        />
+                        {brandLogoFile && (
+                          <span className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Upload className="h-3 w-3" />
+                            {brandLogoFile.name}
+                          </span>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="productImage" className="flex items-center gap-2">
+                  <Label className="flex items-center gap-2">
                     <ImageIcon className="h-4 w-4 text-primary" />
-                    Product Image URL
+                    Product Image (Optional)
                   </Label>
-                  <Input
-                    id="productImage"
-                    type="url"
-                    placeholder="https://example.com/product.jpg"
-                    value={productImage}
-                    onChange={(e) => setProductImage(e.target.value)}
-                    disabled={generating}
-                    className="bg-secondary/50"
-                  />
+                  <Tabs defaultValue="url" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="url">URL</TabsTrigger>
+                      <TabsTrigger value="upload">Upload</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="url" className="space-y-2">
+                      <Input
+                        type="url"
+                        placeholder="https://example.com/product.jpg"
+                        value={productImageUrl}
+                        onChange={(e) => {
+                          setProductImageUrl(e.target.value);
+                          setProductImageFile(null);
+                        }}
+                        disabled={generating}
+                        className="bg-secondary/50"
+                      />
+                    </TabsContent>
+                    <TabsContent value="upload" className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setProductImageFile(file);
+                              setProductImageUrl('');
+                            }
+                          }}
+                          disabled={generating}
+                          className="bg-secondary/50"
+                        />
+                        {productImageFile && (
+                          <span className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Upload className="h-3 w-3" />
+                            {productImageFile.name}
+                          </span>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </div>
 
