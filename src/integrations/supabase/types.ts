@@ -56,6 +56,45 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_posters: {
+        Row: {
+          brand_colors: string | null
+          brand_logo_url: string | null
+          created_at: string | null
+          dimensions: string | null
+          id: string
+          poster_url: string | null
+          product_image_url: string | null
+          prompt: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand_colors?: string | null
+          brand_logo_url?: string | null
+          created_at?: string | null
+          dimensions?: string | null
+          id?: string
+          poster_url?: string | null
+          product_image_url?: string | null
+          prompt: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand_colors?: string | null
+          brand_logo_url?: string | null
+          created_at?: string | null
+          dimensions?: string | null
+          id?: string
+          poster_url?: string | null
+          product_image_url?: string | null
+          prompt?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       generated_videos: {
         Row: {
           brand_logo_url: string | null

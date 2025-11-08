@@ -7,6 +7,9 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import Dashboard from "./pages/Dashboard";
 import GenerateVideo from "./pages/GenerateVideo";
+import GeneratePoster from "./pages/GeneratePoster";
+import VideoDetails from "./pages/VideoDetails";
+import PosterDetails from "./pages/PosterDetails";
 import CritiqueAnalysis from "./pages/CritiqueAnalysis";
 import CritiqueResults from "./pages/CritiqueResults";
 import MigrationSetup from "./pages/MigrationSetup";
@@ -26,6 +29,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/generate" element={<GenerateVideo />} />
+              <Route path="/generate-poster" element={<GeneratePoster />} />
+              <Route path="/video/:id" element={<VideoDetails />} />
+              <Route path="/poster/:id" element={<PosterDetails />} />
               <Route path="/critique" element={<CritiqueAnalysis />} />
               <Route path="/results/:id" element={<CritiqueResults />} />
               <Route path="/migration-setup" element={<MigrationSetup />} />
