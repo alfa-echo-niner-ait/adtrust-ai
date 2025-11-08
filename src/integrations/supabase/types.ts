@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      critiques: {
+        Row: {
+          brand_colors: string
+          brand_fit_score: number | null
+          caption: string
+          created_at: string | null
+          critique_summary: string | null
+          id: string
+          media_type: string
+          media_url: string
+          refinement_prompt: string | null
+          safety_score: number | null
+          visual_quality_score: number | null
+        }
+        Insert: {
+          brand_colors: string
+          brand_fit_score?: number | null
+          caption: string
+          created_at?: string | null
+          critique_summary?: string | null
+          id?: string
+          media_type?: string
+          media_url: string
+          refinement_prompt?: string | null
+          safety_score?: number | null
+          visual_quality_score?: number | null
+        }
+        Update: {
+          brand_colors?: string
+          brand_fit_score?: number | null
+          caption?: string
+          created_at?: string | null
+          critique_summary?: string | null
+          id?: string
+          media_type?: string
+          media_url?: string
+          refinement_prompt?: string | null
+          safety_score?: number | null
+          visual_quality_score?: number | null
+        }
+        Relationships: []
+      }
+      generated_videos: {
+        Row: {
+          brand_logo_url: string | null
+          created_at: string | null
+          id: string
+          product_image_url: string | null
+          prompt: string
+          status: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          brand_logo_url?: string | null
+          created_at?: string | null
+          id?: string
+          product_image_url?: string | null
+          prompt: string
+          status?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          brand_logo_url?: string | null
+          created_at?: string | null
+          id?: string
+          product_image_url?: string | null
+          prompt?: string
+          status?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
