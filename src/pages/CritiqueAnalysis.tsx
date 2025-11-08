@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Video, Upload, Link2, Plus, X, Trash2 } from 'lucide-react';
+import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Video, Upload, Plus, X, Trash2 } from 'lucide-react';
 import { useCritique } from '@/hooks/useCritique';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,6 @@ export default function CritiqueAnalysis() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
-  const [inputMethod, setInputMethod] = useState<'url' | 'upload'>('url');
   const [mediaUrl, setMediaUrl] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [brandColors, setBrandColors] = useState<string[]>([]);
@@ -32,7 +31,6 @@ export default function CritiqueAnalysis() {
     if (location.state?.videoUrl) {
       setMediaUrl(location.state.videoUrl);
       setMediaType('video');
-      setInputMethod('url');
     }
   }, [location.state]);
 
@@ -79,12 +77,10 @@ export default function CritiqueAnalysis() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const mediaSource = inputMethod === 'url' ? mediaUrl : uploadedFile;
-    
-    if (!mediaSource || brandColors.length === 0 || !caption) {
+    if (!uploadedFile || brandColors.length === 0 || !caption) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields and add at least one brand color.",
+        description: "Please upload media, add at least one brand color, and provide a caption.",
         variant: "destructive",
       });
       return;
@@ -122,83 +118,51 @@ export default function CritiqueAnalysis() {
                 Ad Media
               </CardTitle>
               <CardDescription>
-                Upload or provide URL for your {mediaType}
+                Upload your {mediaType} file for analysis
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Media Type Selection */}
               <Tabs value={mediaType} onValueChange={(v) => setMediaType(v as 'image' | 'video')} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="image" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
+                  <TabsTrigger value="image" className="gap-2" disabled={!!uploadedFile}>
                     <ImageIcon className="h-4 w-4" />
                     Image
                   </TabsTrigger>
-                  <TabsTrigger value="video" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
+                  <TabsTrigger value="video" className="gap-2" disabled={!!uploadedFile}>
                     <Video className="h-4 w-4" />
                     Video
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
 
-              {/* Input Method Selection */}
-              <Tabs value={inputMethod} onValueChange={(v) => setInputMethod(v as 'url' | 'upload')} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="url" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
-                    <Link2 className="h-4 w-4" />
-                    URL
-                  </TabsTrigger>
-                  <TabsTrigger value="upload" className="gap-2" disabled={!!(mediaUrl || uploadedFile)}>
-                    <Upload className="h-4 w-4" />
-                    Upload File
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              {/* Media Input */}
-              {!mediaUrl && !uploadedFile ? (
-                <div className="space-y-3">
-                  {inputMethod === 'url' ? (
-                    <div className="space-y-2">
-                      <Input
-                        type="url"
-                        placeholder={`https://example.com/ad-${mediaType}.${mediaType === 'image' ? 'jpg' : 'mp4'}`}
-                        value={mediaUrl}
-                        onChange={(e) => setMediaUrl(e.target.value)}
-                        disabled={loading}
-                        className="bg-secondary/50"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter a direct link to your ad {mediaType}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-center w-full">
-                        <label
-                          htmlFor="dropzone-file"
-                          className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50 border-border transition-colors"
-                        >
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground">
-                              <span className="font-semibold">Click to upload</span> or drag and drop
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {mediaType === 'image' ? 'PNG, JPG, WEBP (MAX. 20MB)' : 'MP4, MOV, AVI (MAX. 20MB)'}
-                            </p>
-                          </div>
-                          <Input
-                            id="dropzone-file"
-                            type="file"
-                            accept={mediaType === 'image' ? 'image/*' : 'video/*'}
-                            onChange={handleFileUpload}
-                            disabled={loading}
-                            className="hidden"
-                          />
-                        </label>
+              {/* Media Upload */}
+              {!uploadedFile ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center w-full">
+                    <label
+                      htmlFor="dropzone-file"
+                      className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50 border-border transition-colors"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-12 h-12 mb-4 text-muted-foreground" />
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {mediaType === 'image' ? 'PNG, JPG, WEBP (MAX. 20MB)' : 'MP4, MOV, AVI (MAX. 20MB)'}
+                        </p>
                       </div>
-                    </div>
-                  )}
+                      <Input
+                        id="dropzone-file"
+                        type="file"
+                        accept={mediaType === 'image' ? 'image/*' : 'video/*'}
+                        onChange={handleFileUpload}
+                        disabled={loading}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -240,11 +204,9 @@ export default function CritiqueAnalysis() {
                     <div className="flex items-center gap-3">
                       {mediaType === 'image' ? <ImageIcon className="h-5 w-5 text-primary" /> : <Video className="h-5 w-5 text-primary" />}
                       <div>
-                        <p className="text-sm font-medium">
-                          {uploadedFile ? uploadedFile.name : 'URL Media'}
-                        </p>
+                        <p className="text-sm font-medium">{uploadedFile.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {inputMethod === 'url' ? 'From URL' : 'Uploaded file'}
+                          {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
                     </div>
