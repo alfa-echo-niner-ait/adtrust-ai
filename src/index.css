@@ -8,6 +8,59 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Light mode colors */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 20% 95%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 217 20% 95%;
+    --muted-foreground: 217 20% 35%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 217 20% 90%;
+    --input: 217 20% 90%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
+    --gradient-card: linear-gradient(180deg, hsl(217 20% 97%), hsl(217 20% 95%));
+    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.15);
+    
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 20% 95%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 217 20% 90%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  .dark {
+    /* Dark mode colors */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
@@ -41,8 +94,6 @@ All colors MUST be HSL.
     --border: 217 33% 20%;
     --input: 217 33% 20%;
     --ring: 217 91% 60%;
-
-    --radius: 0.75rem;
 
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
     --gradient-card: linear-gradient(180deg, hsl(217 33% 17%), hsl(217 33% 13%));
