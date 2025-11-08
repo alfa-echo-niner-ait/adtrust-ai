@@ -27,19 +27,37 @@ export function useCritique() {
     setResult(null);
 
     try {
-      // Simulate API call with realistic delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Call the Google Gemini API through edge function
+      const { data: critiqueData, error: functionError } = await supabase.functions.invoke(
+        'critique-with-google',
+        {
+          body: {
+            mediaUrl: input.mediaUrl,
+            brandColors: input.brandColors,
+            caption: input.caption,
+            mediaType: input.mediaType || 'image'
+          }
+        }
+      );
 
-      // Mock response - in production, this would call your AI API
-      const mockResult: CritiqueResult = {
-        BrandFit_Score: 0.85,
-        VisualQuality_Score: 0.92,
-        Safety_Score: 0.78,
-        Critique_Summary: `The ad demonstrates strong visual quality with professional composition and clear messaging. Brand colors (${input.brandColors}) are partially present but could be more prominent. The safety review flagged minor concerns regarding claim substantiation. Overall, the ad aligns well with brand guidelines but requires refinement before deployment.`,
-        Refinement_Prompt_Suggestion: `Create a high-quality advertisement featuring [product/service] with dominant use of brand color ${input.brandColors}. Ensure the brand logo is prominently displayed in the top-right corner. The visual should convey [key message from caption] while maintaining a professional, trustworthy aesthetic. Include clear product benefits without making unsubstantiated claims. Lighting should be bright and inviting. Composition should follow the rule of thirds with the product as the focal point.`,
+      if (functionError) {
+        console.error('Edge function error:', functionError);
+        throw new Error(`Failed to run critique: ${functionError.message}`);
+      }
+
+      if (!critiqueData) {
+        throw new Error('No data returned from critique function');
+      }
+
+      const result: CritiqueResult = {
+        BrandFit_Score: critiqueData.BrandFit_Score,
+        VisualQuality_Score: critiqueData.VisualQuality_Score,
+        Safety_Score: critiqueData.Safety_Score,
+        Critique_Summary: critiqueData.Critique_Summary,
+        Refinement_Prompt_Suggestion: critiqueData.Refinement_Prompt_Suggestion,
       };
 
-      setResult(mockResult);
+      setResult(result);
 
       // Save to database
       const { data, error: dbError } = await supabase
@@ -49,11 +67,11 @@ export function useCritique() {
           media_type: input.mediaType || 'image',
           brand_colors: input.brandColors,
           caption: input.caption,
-          brand_fit_score: mockResult.BrandFit_Score,
-          visual_quality_score: mockResult.VisualQuality_Score,
-          safety_score: mockResult.Safety_Score,
-          critique_summary: mockResult.Critique_Summary,
-          refinement_prompt: mockResult.Refinement_Prompt_Suggestion,
+          brand_fit_score: result.BrandFit_Score,
+          visual_quality_score: result.VisualQuality_Score,
+          safety_score: result.Safety_Score,
+          critique_summary: result.Critique_Summary,
+          refinement_prompt: result.Refinement_Prompt_Suggestion,
         })
         .select()
         .single();
