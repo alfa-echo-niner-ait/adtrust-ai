@@ -476,10 +476,4 @@ The project supports multiple deployment scenarios:
 - Type Safety
 - Test Coverage
 
----
-
-## Links
-
-- **Documentation**: See `README.md` and `PROJECT_SUBMISSION.md`
-- **Live Demo**: https://adtrust-ai.lovable.app/
 

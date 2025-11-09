@@ -365,4 +365,10 @@ VITE_SUPABASE_PROJECT_ID=<your-project-id>
 
 ---
 
+## Links
+
+- **Documentation**: See `README.md` and `PROJECT_SUBMISSION.md`
+- **Live Demo**: https://adtrust-ai.lovable.app/
+
+
 **Built with ❤️ using Lovable during Hack-Nation Global AI Online Hackathon** 
