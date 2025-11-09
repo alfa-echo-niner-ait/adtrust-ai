@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Upload, X, Sparkles, Plus, Trash2, Palette, Maximize2 } from "lucide-react";
+import { Upload, X, Sparkles, Plus, Trash2, Palette, Maximize2, Loader2 } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
 
 const GeneratePoster = () => {
@@ -163,6 +163,7 @@ const GeneratePoster = () => {
               placeholder="Describe the poster you want to create..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              disabled={generating}
               rows={4}
             />
           </div>
@@ -172,7 +173,7 @@ const GeneratePoster = () => {
               <Maximize2 className="h-4 w-4" />
               Aspect Ratio
             </Label>
-            <RadioGroup value={aspectRatio} onValueChange={setAspectRatio} className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <RadioGroup value={aspectRatio} onValueChange={setAspectRatio} disabled={generating} className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="1:1" id="ratio-1-1" />
                 <Label htmlFor="ratio-1-1" className="cursor-pointer font-normal">1:1 Square</Label>
@@ -211,12 +212,14 @@ const GeneratePoster = () => {
                     type="color"
                     value={currentColor}
                     onChange={(e) => setCurrentColor(e.target.value)}
+                    disabled={generating}
                     className="h-10 w-20 cursor-pointer"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={addColorFromPicker}
+                    disabled={generating}
                     className="flex-1"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -234,11 +237,13 @@ const GeneratePoster = () => {
                     value={hexInput}
                     onChange={(e) => setHexInput(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && addColorFromHex()}
+                    disabled={generating}
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={addColorFromHex}
+                    disabled={generating}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -266,6 +271,7 @@ const GeneratePoster = () => {
                         size="icon"
                         className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => removeColor(color)}
+                        disabled={generating}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -291,6 +297,7 @@ const GeneratePoster = () => {
                     size="icon"
                     className="absolute top-2 right-2"
                     onClick={() => clearFile('logo')}
+                    disabled={generating}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -304,6 +311,7 @@ const GeneratePoster = () => {
                     accept="image/*"
                     className="hidden"
                     onChange={(e) => handleFileChange(e, 'logo')}
+                    disabled={generating}
                   />
                 </label>
               )}
@@ -323,6 +331,7 @@ const GeneratePoster = () => {
                     size="icon"
                     className="absolute top-2 right-2"
                     onClick={() => clearFile('product')}
+                    disabled={generating}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -336,6 +345,7 @@ const GeneratePoster = () => {
                     accept="image/*"
                     className="hidden"
                     onChange={(e) => handleFileChange(e, 'product')}
+                    disabled={generating}
                   />
                 </label>
               )}
@@ -348,7 +358,17 @@ const GeneratePoster = () => {
             className="w-full"
             size="lg"
           >
-            {generating ? "Generating..." : "Generate Poster"}
+            {generating ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-5 w-5" />
+                Generate Poster
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>

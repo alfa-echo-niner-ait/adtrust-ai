@@ -214,7 +214,7 @@ export default function GenerateVideo() {
                   <Maximize2 className="h-4 w-4 text-primary" />
                   Aspect Ratio
                 </Label>
-                <RadioGroup value={aspectRatio} onValueChange={setAspectRatio} className="grid grid-cols-2 gap-4">
+                <RadioGroup value={aspectRatio} onValueChange={setAspectRatio} disabled={generating} className="grid grid-cols-2 gap-4">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="16:9" id="video-ratio-16-9" />
                     <Label htmlFor="video-ratio-16-9" className="cursor-pointer font-normal">16:9 Widescreen</Label>

@@ -136,11 +136,11 @@ export default function CritiqueAnalysis() {
               {/* Media Type Selection */}
               <Tabs value={mediaType} onValueChange={(v) => setMediaType(v as 'image' | 'video')} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="image" className="gap-2" disabled={!!uploadedFile}>
+                  <TabsTrigger value="image" className="gap-2" disabled={!!uploadedFile || loading}>
                     <ImageIcon className="h-4 w-4" />
                     Image
                   </TabsTrigger>
-                  <TabsTrigger value="video" className="gap-2" disabled={!!uploadedFile}>
+                  <TabsTrigger value="video" className="gap-2" disabled={!!uploadedFile || loading}>
                     <Video className="h-4 w-4" />
                     Video
                   </TabsTrigger>
