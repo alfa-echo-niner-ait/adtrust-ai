@@ -89,6 +89,14 @@ export default function CritiqueAnalysis() {
   };
 
   const handleAddColor = (color: string) => {
+    if (!/^#[0-9a-fA-F]{6}$/.test(color) && !/^#[0-9a-fA-F]{3}$/.test(color)) {
+      toast({
+        title: "Invalid color format",
+        description: "Please use a valid hex code.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!brandColors.includes(color)) {
       setBrandColors([...brandColors, color]);
     } else {
@@ -113,10 +121,10 @@ export default function CritiqueAnalysis() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!uploadedFile || brandColors.length === 0 || !caption) {
+    if (!uploadedFile || brandColors.length === 0 || !caption.trim() || caption.trim().length < 10) {
       toast({
         title: "Missing Information",
-        description: "Please upload media, add at least one brand color, and provide a caption.",
+        description: "Please upload media, add at least one brand color, and provide a caption of at least 10 characters.",
         variant: "destructive",
       });
       return;

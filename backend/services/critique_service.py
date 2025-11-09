@@ -1,57 +1,85 @@
 """Critique service for content analysis."""
 import json
-import base64
+import io
 import requests
+import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
 from flask import current_app
+from PIL import Image
 
 
 class CritiqueService:
     """Service for content critique operations."""
+
+    def __init__(self):
+        """Initialize the service."""
+        self.api_key = current_app.config.get('GOOGLE_API_KEY')
+        if not self.api_key:
+            raise ValueError("GOOGLE_API_KEY not configured")
+        genai.configure(api_key=self.api_key)
     
     def critique_content(self, media_url: str, media_type: str, brand_colors: list, caption: str) -> dict:
         """Perform AI critique on content."""
         try:
             # Fetch media
-            media_data = self._fetch_and_encode_media(media_url)
-            mime_type = 'video/mp4' if media_type == 'video' else 'image/jpeg'
+            media_content = self._fetch_media(media_url)
             
             # Build critique prompt
             prompt = self._build_critique_prompt(brand_colors, caption)
             
-            # Call Google Gemini API
-            api_key = current_app.config['GOOGLE_API_KEY']
-            response = requests.post(
-                f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}',
-                headers={'Content-Type': 'application/json'},
-                json={
-                    'contents': [{
-                        'parts': [
-                            {'text': prompt},
-                            {
-                                'inline_data': {
-                                    'mime_type': mime_type,
-                                    'data': media_data
-                                }
-                            }
-                        ]
-                    }],
-                    'generationConfig': {
-                        'temperature': 0.4,
-                        'maxOutputTokens': 2048
-                    }
+            # Define the JSON schema for the desired output
+            json_schema = {
+                "type": "object",
+                "properties": {
+                    "BrandFit_Score": {"type": "number", "description": "Score from 0 to 1 for brand alignment."},
+                    "VisualQuality_Score": {"type": "number", "description": "Score from 0 to 1 for visual quality."},
+                    "MessageClarity_Score": {"type": "number", "description": "Score from 0 to 1 for message clarity."},
+                    "ToneOfVoice_Score": {"type": "number", "description": "Score from 0 to 1 for tone of voice."},
+                    "Safety_Score": {"type": "number", "description": "Score from 0 to 1 for safety and ethics."},
+                    "BrandValidation": {
+                        "type": "object",
+                        "properties": {
+                            "color_match_percentage": {"type": "integer", "description": "Percentage of brand colors present."},
+                            "logo_present": {"type": "boolean", "description": "Is the logo present?"},
+                            "logo_correct": {"type": "boolean", "description": "Is the logo correct?"},
+                            "overall_consistency": {"type": "number", "description": "Overall brand consistency score from 0 to 1."}
+                        },
+                        "required": ["color_match_percentage", "logo_present", "logo_correct", "overall_consistency"]
+                    },
+                    "SafetyBreakdown": {
+                        "type": "object",
+                        "properties": {
+                            "harmful_content": {"type": "number", "description": "Score from 0 to 1 for harmful content."},
+                            "stereotypes": {"type": "number", "description": "Score from 0 to 1 for stereotypes."},
+                            "misleading_claims": {"type": "number", "description": "Score from 0 to 1 for misleading claims."}
+                        },
+                        "required": ["harmful_content", "stereotypes", "misleading_claims"]
+                    },
+                    "Critique_Summary": {"type": "string", "description": "Detailed explanation covering all dimensions."},
+                    "Refinement_Prompt_Suggestion": {"type": "string", "description": "Actionable suggestions for prompt refinement."}
                 },
-                timeout=60
+                "required": ["BrandFit_Score", "VisualQuality_Score", "MessageClarity_Score", "ToneOfVoice_Score", "Safety_Score", "BrandValidation", "SafetyBreakdown", "Critique_Summary", "Refinement_Prompt_Suggestion"]
+            }
+
+            # Call Google Gemini API
+            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            
+            # Prepare content for API
+            content_parts = [prompt]
+            if media_type == 'image':
+                img = Image.open(io.BytesIO(media_content))
+                content_parts.append(img)
+            else: # video
+                video_part = genai.types.Part.from_data(media_content, mime_type='video/mp4')
+                content_parts.append(video_part)
+
+            response = model.generate_content(
+                content_parts,
+                generation_config=GenerationConfig(response_mime_type="application/json", response_schema=json_schema)
             )
             
-            if response.status_code != 200:
-                raise Exception(f'Gemini API error: {response.text}')
-            
-            result = response.json()
-            generated_text = result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-            
-            # Parse JSON response
-            cleaned_text = generated_text.replace('```json', '').replace('```', '').strip()
-            critique_result = json.loads(cleaned_text)
+            # The response text should be a valid JSON string
+            critique_result = json.loads(response.text)
             
             current_app.logger.info('Critique completed successfully')
             return critique_result
@@ -60,63 +88,19 @@ class CritiqueService:
             current_app.logger.error(f'Critique failed: {e}')
             raise
     
-    def _fetch_and_encode_media(self, url: str) -> str:
-        """Fetch media and encode to base64."""
+    def _fetch_media(self, url: str) -> bytes:
+        """Fetch media content."""
         response = requests.get(url, timeout=60)
-        return base64.b64encode(response.content).decode('utf-8')
+        response.raise_for_status()
+        return response.content
     
     def _build_critique_prompt(self, brand_colors: list, caption: str) -> str:
         """Build comprehensive critique prompt."""
         colors = ', '.join(brand_colors) if brand_colors else 'Not specified'
         
-        prompt = f"""You are an expert brand and creative director evaluating AI-generated ads.
-Analyze the provided ad creative and provide a comprehensive critique based on these brand guidelines:
-
-Brand Colors: {colors}
-Caption/Message: {caption}
-
-Evaluate the following aspects with precision:
-
-1. BRAND ALIGNMENT (0-1): How well does the visual content match the provided brand colors? Does it use the correct logo? Is the overall aesthetic on-brand?
-
-2. VISUAL QUALITY (0-1): Assess composition, clarity, professionalism, absence of artifacts, watermarks, or blurriness
-
-3. MESSAGE CLARITY (0-1): Is the product/service obvious? Is the tagline/caption clear and correct? Can viewers immediately understand what's being advertised?
-
-4. TONE OF VOICE (0-1): Does the messaging style, language, and overall communication match the expected brand voice? Is it appropriate for the target audience?
-
-5. SAFETY & ETHICS (0-1): Check for harmful content, stereotypes, misleading claims, or any unsafe elements
-
-6. BRAND VALIDATION: Compare the generated content against provided brand assets:
-   - Calculate what percentage of the provided brand colors are actually present in the ad
-   - Check if a logo is visible and appears correct
-   - Assess overall brand consistency
-
-7. SAFETY BREAKDOWN: Provide granular safety analysis:
-   - Harmful content detection (violence, adult content, etc.)
-   - Stereotype detection (racial, gender, age-based stereotypes)
-   - Misleading claims detection (false promises, exaggerations)
-
-Return ONLY a JSON object with this exact structure:
-{{
-  "BrandFit_Score": 0.85,
-  "VisualQuality_Score": 0.92,
-  "MessageClarity_Score": 0.88,
-  "ToneOfVoice_Score": 0.90,
-  "Safety_Score": 0.95,
-  "BrandValidation": {{
-    "color_match_percentage": 75,
-    "logo_present": true,
-    "logo_correct": true,
-    "overall_consistency": 0.82
-  }},
-  "SafetyBreakdown": {{
-    "harmful_content": 1.0,
-    "stereotypes": 1.0,
-    "misleading_claims": 0.9
-  }},
-  "Critique_Summary": "Detailed explanation covering all dimensions",
-  "Refinement_Prompt_Suggestion": "Specific actionable suggestions explicitly mentioning brand colors: {colors}"
-}}"""
-        
-        return prompt
+        return f"""You are an expert brand and creative director.
+Analyze the provided ad creative based on these brand guidelines:
+- Brand Colors: {colors}
+- Caption/Message: {caption}
+Evaluate the ad and provide a comprehensive critique. Return the analysis in the specified JSON format.
+"""

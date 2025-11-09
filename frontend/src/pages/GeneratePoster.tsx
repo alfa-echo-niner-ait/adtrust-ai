@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { usePoster } from "@/hooks/usePoster";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,13 +36,41 @@ const GeneratePoster = () => {
 
   useEffect(() => {
     if (result) {
+      console.log('Poster generation result:', result);
       toast.success("Poster generation started!");
       navigate(`/poster/${result.id}`);
     }
     if (error) {
       toast.error(error);
+      // Clean up uploaded files if generation fails
+      const uploadedUrls = [
+        localStorage.getItem('brandLogoUrl'),
+        localStorage.getItem('productImageUrl')
+      ].filter(Boolean);
+
+      if (uploadedUrls.length > 0) {
+        uploadedUrls.forEach(url => {
+          if (url) deleteFile(url);
+        });
+        localStorage.removeItem('brandLogoUrl');
+        localStorage.removeItem('productImageUrl');
+      }
     }
   }, [result, error, navigate]);
+
+  const deleteFile = async (fileUrl: string) => {
+    try {
+      await fetch('http://localhost:5000/api/delete_file', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ file_url: fileUrl }),
+      });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
     const file = e.target.files?.[0];
@@ -88,6 +115,10 @@ const GeneratePoster = () => {
   };
 
   const handleAddColor = (color: string) => {
+    if (!/^#[0-9a-fA-F]{6}$/.test(color) && !/^#[0-9a-fA-F]{3}$/.test(color)) {
+      toast.error("Invalid color format. Please use a valid hex code.");
+      return;
+    }
     if (!brandColors.includes(color)) {
       setBrandColors([...brandColors, color]);
     } else {
@@ -100,22 +131,51 @@ const GeneratePoster = () => {
   };
 
   const handleGeneratePoster = async () => {
-    if (!prompt.trim()) {
-      toast.error("Please enter a prompt");
+    if (!prompt.trim() || prompt.trim().length < 10) {
+      toast.error("Please enter a prompt of at least 10 characters.");
       return;
     }
 
-    // TODO: Handle file uploads to a backend service if needed, for now we don't support it.
-    if (brandLogoFile || productImageFile) {
-      toast.info("File uploads are not yet supported in this version.");
+    let brandLogoUrl = null;
+    let productImageUrl = null;
+
+    if (brandLogoFile) {
+      brandLogoUrl = await uploadFile(brandLogoFile);
+    }
+
+    if (productImageFile) {
+      productImageUrl = await uploadFile(productImageFile);
     }
 
     await generatePoster({
       prompt,
       brandColors,
-      brandName: "Brand", // This should be dynamic
       aspectRatio,
+      brandLogoUrl,
+      productImageUrl,
     });
+  };
+
+  const uploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.status >= 400) {
+        throw new Error(data.error || 'File upload failed');
+      }
+      console.log('File uploaded to:', data.url);
+      return data.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error((error as Error).message || 'File upload failed');
+      return null;
+    }
   };
 
   return (

@@ -50,10 +50,45 @@ export default function GenerateVideo() {
         description: error,
         variant: "destructive",
       });
+      // Clean up uploaded files if generation fails
+      const uploadedUrls = [
+        localStorage.getItem('brandLogoUrl'),
+        localStorage.getItem('productImageUrl')
+      ].filter(Boolean);
+
+      if (uploadedUrls.length > 0) {
+        uploadedUrls.forEach(url => {
+          if (url) deleteFile(url);
+        });
+        localStorage.removeItem('brandLogoUrl');
+        localStorage.removeItem('productImageUrl');
+      }
     }
   }, [result, error, navigate, toast]);
 
+  const deleteFile = async (fileUrl: string) => {
+    try {
+      await fetch('http://localhost:5000/api/delete_file', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ file_url: fileUrl }),
+      });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
+  };
+
   const handleAddColor = (color: string) => {
+    if (!/^#[0-9a-fA-F]{6}$/.test(color) && !/^#[0-9a-fA-F]{3}$/.test(color)) {
+      toast({
+        title: "Invalid color format",
+        description: "Please use a valid hex code.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!brandColors.includes(color)) {
       setBrandColors([...brandColors, color]);
     } else {
@@ -124,27 +159,60 @@ export default function GenerateVideo() {
   };
 
   const handleGenerateVideo = async () => {
-    if (!videoPrompt.trim()) {
+    if (!videoPrompt.trim() || videoPrompt.trim().length < 10) {
       toast({
         title: "Missing Information",
-        description: "Please provide a video prompt.",
+        description: "Please provide a video prompt of at least 10 characters.",
         variant: "destructive",
       });
       return;
     }
 
-    if (brandLogoFile || productImageFile) {
-      toast({
-        title: "File uploads not supported",
-        description: "File uploads are not yet supported in this version.",
-      });
+    let brandLogoUrl = null;
+    let productImageUrl = null;
+
+    if (brandLogoFile) {
+      brandLogoUrl = await uploadFile(brandLogoFile);
+    }
+
+    if (productImageFile) {
+      productImageUrl = await uploadFile(productImageFile);
     }
 
     await generateVideo({
       prompt: videoPrompt,
       brandName: "Brand", // This should be dynamic
       aspectRatio,
+      brandLogoUrl,
+      productImageUrl,
+      brandColors,
     });
+  };
+
+  const uploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (response.status >= 400) {
+        throw new Error(data.error || 'File upload failed');
+      }
+      return data.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "File upload failed",
+        description: (error as Error).message || "Could not upload file to server.",
+        variant: "destructive",
+      });
+      return null;
+    }
   };
 
   const handleSaveAndCritique = () => {

@@ -3,8 +3,9 @@ import { useState } from 'react';
 export interface PosterInput {
   prompt: string;
   brandColors: string[];
-  brandName: string;
   aspectRatio?: string;
+  brandLogoUrl?: string | null;
+  productImageUrl?: string | null;
 }
 
 export interface PosterResult {
@@ -32,9 +33,10 @@ export function usePoster() {
         },
         body: JSON.stringify({
           prompt: input.prompt,
-          brand_colors: input.brandColors,
-          brand_name: input.brandName,
-          aspect_ratio: input.aspectRatio || '1:1',
+          brandColors: input.brandColors,
+          aspectRatio: input.aspectRatio || '1:1',
+          brandLogoUrl: input.brandLogoUrl,
+          productImageUrl: input.productImageUrl,
         }),
       });
 

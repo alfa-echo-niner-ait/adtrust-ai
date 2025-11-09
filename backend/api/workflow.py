@@ -25,12 +25,12 @@ def start_workflow():
     workflow_id = str(uuid.uuid4())
     workflow = WorkflowRun(
         id=workflow_id,
-        content_type=data['contentType'],
+        content_type=data['content_type'],
         prompt=data['prompt'],
-        brand_logo_url=data.get('brandLogo'),
-        product_image_url=data.get('productImage'),
-        brand_colors=data.get('brandColors'),
-        aspect_ratio=data.get('aspectRatio'),
+        brand_logo_url=data.get('brand_logo_url'),
+        product_image_url=data.get('product_image_url'),
+        brand_colors=','.join(data.get('brand_colors', [])),
+        aspect_ratio=data.get('aspect_ratio'),
         status='running',
         current_step='initializing'
     )

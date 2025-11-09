@@ -4,6 +4,9 @@ export interface VideoInput {
   prompt: string;
   brandName: string;
   aspectRatio?: string;
+  brandLogoUrl?: string | null;
+  productImageUrl?: string | null;
+  brandColors?: string[];
 }
 
 export interface VideoResult {
@@ -33,6 +36,9 @@ export function useVideo() {
           prompt: input.prompt,
           brand_name: input.brandName,
           aspect_ratio: input.aspectRatio || '16:9',
+          brand_logo_url: input.brandLogoUrl,
+          product_image_url: input.productImageUrl,
+          brand_colors: input.brandColors,
         }),
       });
 

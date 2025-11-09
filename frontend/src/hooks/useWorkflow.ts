@@ -4,6 +4,8 @@ export interface WorkflowInput {
   prompt: string;
   brandColors: string[];
   brandName: string;
+  brandLogoUrl?: string | null;
+  productImageUrl?: string | null;
 }
 
 export interface WorkflowResult {
@@ -33,6 +35,8 @@ export function useWorkflow() {
           prompt: input.prompt,
           brand_colors: input.brandColors,
           brand_name: input.brandName,
+          brand_logo_url: input.brandLogoUrl,
+          product_image_url: input.productImageUrl,
         }),
       });
 
