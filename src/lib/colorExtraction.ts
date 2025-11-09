@@ -144,3 +144,125 @@ export const extractColorsFromImage = async (file: File, maxColors: number = 5):
     img.src = URL.createObjectURL(file);
   });
 };
+
+/**
+ * Extract dominant colors from a video file by sampling a frame
+ */
+export const extractColorsFromVideo = async (file: File, maxColors: number = 5): Promise<string[]> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      reject(new Error('Could not get canvas context'));
+      return;
+    }
+
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+
+    const objectUrl = URL.createObjectURL(file);
+    video.src = objectUrl;
+
+    video.addEventListener('loadedmetadata', () => {
+      // Seek to 25% of the video duration for a representative frame
+      video.currentTime = Math.min(video.duration * 0.25, video.duration);
+    });
+
+    video.addEventListener('seeked', () => {
+      try {
+        // Resize for faster processing
+        const maxSize = 200;
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw the current video frame to canvas
+        ctx.drawImage(video, 0, 0, width, height);
+
+        // Get image data
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+
+        // Count colors
+        const colorMap = new Map<string, ColorCount>();
+
+        // Sample every 4th pixel for performance
+        for (let i = 0; i < data.length; i += 16) {
+          const rgb: RGB = {
+            r: data[i],
+            g: data[i + 1],
+            b: data[i + 2],
+          };
+
+          // Skip invalid colors
+          if (!isValidColor(rgb)) continue;
+
+          // Quantize to reduce similar colors
+          const quantized = quantizeColor(rgb);
+          const key = `${quantized.r},${quantized.g},${quantized.b}`;
+
+          const existing = colorMap.get(key);
+          if (existing) {
+            existing.count++;
+          } else {
+            colorMap.set(key, { color: quantized, count: 1 });
+          }
+        }
+
+        // Sort by frequency and get top colors
+        const sortedColors = Array.from(colorMap.values())
+          .sort((a, b) => b.count - a.count);
+
+        // Filter out similar colors
+        const uniqueColors: ColorCount[] = [];
+        const minDistance = 50; // Minimum color distance threshold
+
+        for (const color of sortedColors) {
+          const isSimilar = uniqueColors.some(unique => 
+            colorDistance(color.color, unique.color) < minDistance
+          );
+
+          if (!isSimilar) {
+            uniqueColors.push(color);
+            if (uniqueColors.length >= maxColors) break;
+          }
+        }
+
+        // Convert to hex
+        const hexColors = uniqueColors.map(c => 
+          rgbToHex(c.color.r, c.color.g, c.color.b)
+        );
+
+        URL.revokeObjectURL(objectUrl);
+        resolve(hexColors);
+      } catch (error) {
+        URL.revokeObjectURL(objectUrl);
+        reject(error);
+      }
+    });
+
+    video.addEventListener('error', () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load video'));
+    });
+
+    video.load();
+  });
+};

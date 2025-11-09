@@ -30,19 +30,19 @@ export const ColorDisplay = ({
         </p>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {colors.map((color, index) => (
           <div
             key={`${color}-${index}`}
-            className="group relative flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-md transition-shadow"
+            className="relative flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-card transition-colors"
           >
             <div
-              className="w-12 h-12 rounded-md border-2 border-border shadow-sm shrink-0"
+              className="w-10 h-10 rounded-md border-2 border-border shadow-sm shrink-0"
               style={{ backgroundColor: color }}
               title={color}
             />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-mono text-foreground truncate">
+              <p className="text-sm font-mono font-medium text-foreground">
                 {color.toUpperCase()}
               </p>
             </div>
@@ -53,9 +53,9 @@ export const ColorDisplay = ({
                 disabled={disabled}
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                className="h-8 w-8 shrink-0 hover:bg-destructive/10 hover:text-destructive z-10"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </Button>
             )}
           </div>
