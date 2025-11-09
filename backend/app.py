@@ -1,10 +1,9 @@
 """Main application factory."""
 import os
-import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import config
-from extensions import db
+from extensions import db, init_supabase
 from utils.logger import setup_logger
 
 
@@ -22,6 +21,7 @@ def create_app(config_name=None):
     
     # Initialize extensions
     db.init_app(app)
+    init_supabase(app)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     
     # Register blueprints

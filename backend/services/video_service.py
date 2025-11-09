@@ -1,8 +1,9 @@
 """Video generation service."""
+import base64
 import threading
 import requests
 from flask import current_app
-from extensions import db
+from extensions import db, supabase
 from models.video import GeneratedVideo
 
 
@@ -47,9 +48,21 @@ class VideoService:
             
             if response.status_code == 200:
                 result = response.json()
-                video_data = result.get('predictions', [{}])[0].get('bytesBase64Encoded')
-                if video_data:
-                    video_url = f'data:video/mp4;base64,{video_data}'
+                video_data_base64 = result.get('predictions', [{}])[0].get('bytesBase64Encoded')
+                if video_data_base64:
+                    video_data = base64.b64decode(video_data_base64)
+                    bucket_name = current_app.config['SUPABASE_STORAGE_BUCKET']
+                    file_path = f"videos/{video_id}.mp4"
+                    
+                    # Upload to Supabase Storage
+                    supabase.storage.from_(bucket_name).upload(
+                        file=video_data,
+                        path=file_path,
+                        file_options={"content-type": "video/mp4"}
+                    )
+                    
+                    # Get public URL
+                    video_url = supabase.storage.from_(bucket_name).get_public_url(file_path)
             else:
                 # Fallback to sample video if API not available
                 current_app.logger.warning('Video API not available, using fallback')
