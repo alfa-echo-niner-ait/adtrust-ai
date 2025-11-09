@@ -30,7 +30,16 @@ serve(async (req) => {
     // Fetch the media file
     const mediaResponse = await fetch(mediaUrl);
     const mediaBuffer = await mediaResponse.arrayBuffer();
-    const mediaBase64 = btoa(String.fromCharCode(...new Uint8Array(mediaBuffer)));
+    
+    // Convert to base64 safely for large files
+    const uint8Array = new Uint8Array(mediaBuffer);
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      binaryString += String.fromCharCode(...chunk);
+    }
+    const mediaBase64 = btoa(binaryString);
     
     // Determine MIME type
     const mimeType = mediaType === 'video' 

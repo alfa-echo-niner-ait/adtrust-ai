@@ -48,7 +48,7 @@ serve(async (req) => {
 
 async function runWorkflow(supabase: any, workflowId: string) {
   const MAX_ITERATIONS = 3;
-  const TARGET_SCORE = 8.0;
+  const TARGET_SCORE = 0.8; // Score threshold (0.0-1.0 scale)
 
   try {
     // Load workflow
@@ -321,11 +321,11 @@ async function critiqueContent(
       media_type: mediaType,
       caption,
       brand_colors: brandColors || "",
-      brand_fit_score: critiqueResult.brand_fit_score || 0,
-      visual_quality_score: critiqueResult.visual_quality_score || 0,
-      safety_score: critiqueResult.safety_score || 0,
-      critique_summary: critiqueResult.critique_summary || "",
-      refinement_prompt: critiqueResult.refinement_prompt || "",
+      brand_fit_score: critiqueResult.BrandFit_Score || 0,
+      visual_quality_score: critiqueResult.VisualQuality_Score || 0,
+      safety_score: critiqueResult.Safety_Score || 0,
+      critique_summary: critiqueResult.Critique_Summary || "",
+      refinement_prompt: critiqueResult.Refinement_Prompt_Suggestion || "",
     })
     .select()
     .single();
