@@ -21,8 +21,27 @@ const AutoWorkflow = () => {
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandLogo, setBrandLogo] = useState<File | null>(null);
   const [productImage, setProductImage] = useState<File | null>(null);
+  const [brandLogoPreview, setBrandLogoPreview] = useState<string | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'logo') {
+          setBrandLogo(file);
+          setBrandLogoPreview(reader.result as string);
+        } else {
+          setProductImage(file);
+          setProductImagePreview(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const aspectRatios = contentType === "video"
     ? [{ value: "16:9", label: "16:9 (Landscape)" }, { value: "9:16", label: "9:16 (Portrait)" }]
@@ -195,41 +214,63 @@ const AutoWorkflow = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="logo">Brand Logo (Optional)</Label>
-                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed rounded-lg overflow-hidden bg-muted/20">
                   <input
                     id="logo"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setBrandLogo(e.target.files?.[0] || null)}
+                    onChange={(e) => handleFileChange(e, 'logo')}
                     className="hidden"
                     disabled={running}
                   />
-                  <label htmlFor="logo" className="cursor-pointer">
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      {brandLogo ? brandLogo.name : "Upload brand logo"}
-                    </p>
-                  </label>
+                  {brandLogoPreview ? (
+                    <div className="relative aspect-square">
+                      <img
+                        src={brandLogoPreview}
+                        alt="Brand logo preview"
+                        className="w-full h-full object-contain p-4"
+                      />
+                      <label htmlFor="logo" className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
+                        <p className="text-white text-sm">Change logo</p>
+                      </label>
+                    </div>
+                  ) : (
+                    <label htmlFor="logo" className="cursor-pointer block p-6 text-center aspect-square flex flex-col items-center justify-center">
+                      <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Upload brand logo</p>
+                    </label>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="product">Product Image (Optional)</Label>
-                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed rounded-lg overflow-hidden bg-muted/20">
                   <input
                     id="product"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setProductImage(e.target.files?.[0] || null)}
+                    onChange={(e) => handleFileChange(e, 'product')}
                     className="hidden"
                     disabled={running}
                   />
-                  <label htmlFor="product" className="cursor-pointer">
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      {productImage ? productImage.name : "Upload product image"}
-                    </p>
-                  </label>
+                  {productImagePreview ? (
+                    <div className="relative aspect-square">
+                      <img
+                        src={productImagePreview}
+                        alt="Product preview"
+                        className="w-full h-full object-contain p-4"
+                      />
+                      <label htmlFor="product" className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
+                        <p className="text-white text-sm">Change product</p>
+                      </label>
+                    </div>
+                  ) : (
+                    <label htmlFor="product" className="cursor-pointer block p-6 text-center aspect-square flex flex-col items-center justify-center">
+                      <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Upload product image</p>
+                    </label>
+                  )}
                 </div>
               </div>
             </div>
