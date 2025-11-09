@@ -68,13 +68,7 @@ AdTrust/
 │   │   ├── generate-poster-google/
 │   │   └── generate-video-google/
 │   └── migrations/             # Database migrations
-│
-└── python-backend/             # Alternative Python backend
-    ├── api/                    # Flask blueprints
-    ├── models/                 # SQLAlchemy models
-    ├── services/               # Business logic
-    ├── utils/                  # Utilities
-    └── tests/                  # Test suite
+
 ```
 
 ## 🚀 Quick Start
@@ -90,8 +84,8 @@ AdTrust/
 
 1. **Clone the repository**
    ```bash
-   git clone <YOUR_GIT_URL>
-   cd adtrust
+   git clone https://github.com/alfa-echo-niner-ait/adtrust-ai.git
+   cd adtrust-ai
    ```
 
 2. **Install dependencies**
@@ -121,55 +115,6 @@ AdTrust/
    
    The app will be available at `http://localhost:5173`
 
-### Python Backend Setup (Optional)
-
-The Python backend is a standalone Flask application for local development and custom deployments.
-
-1. **Navigate to backend folder**
-   ```bash
-   cd python-backend
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-5. **Initialize database**
-   ```bash
-   python -c "from app import create_app; from extensions import db; app = create_app(); app.app_context().push(); db.create_all()"
-   ```
-
-6. **Run the application**
-   ```bash
-   # Development
-   python app.py
-
-   # Production
-   gunicorn -w 4 -b 0.0.0.0:5000 'app:create_app()'
-   ```
-
-   API will be available at `http://localhost:5000`
-
-7. **Run tests**
-   ```bash
-   pytest
-   
-   # With coverage
-   pytest --cov=. --cov-report=html
-   ```
 
 ## 📚 Technology Stack
 
@@ -370,36 +315,6 @@ See `python-backend/README.md` for detailed API documentation.
 3. Frontend changes require clicking "Update" to deploy
 4. Backend changes (edge functions, migrations) deploy automatically
 
-### Python Backend (Production)
-
-**Using Docker:**
-```bash
-cd python-backend
-docker-compose up -d
-```
-
-**Using Gunicorn:**
-```bash
-gunicorn -w 4 -b 0.0.0.0:5000 'app:create_app()'
-```
-
-**Production Checklist:**
-- Set `FLASK_ENV=production`
-- Use production WSGI server (Gunicorn)
-- Configure reverse proxy (nginx)
-- Enable SSL/TLS certificates
-- Set up monitoring and logging
-- Configure database connection pooling
-- Use secure environment-specific secrets
-- Enable rate limiting
-
-## 🧪 Testing
-
-### Frontend
-```bash
-# Run all tests (when implemented)
-npm test
-```
 
 ## 📝 Environment Variables
 
@@ -409,16 +324,6 @@ VITE_SUPABASE_URL=<your-supabase-url>
 VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key>
 VITE_SUPABASE_PROJECT_ID=<your-project-id>
 ```
-
-### Backend Secrets (via Lovable Cloud UI)
-- `GOOGLE_API_KEY` - Google AI Studio API key
-- `LOVABLE_API_KEY` - Lovable AI API key
-
-
-
-## 📄 License
-
-MIT
 
 ## 💡 Tips & Best Practices
 

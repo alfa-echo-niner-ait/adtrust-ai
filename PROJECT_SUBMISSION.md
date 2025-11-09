@@ -478,12 +478,8 @@ The project supports multiple deployment scenarios:
 
 ---
 
-## Contact & Links
+## Links
 
-- **Project Repository**: [Included in submission]
-- **Documentation**: See `README.md` and `python-backend/README.md`
-- **Live Demo**: https://lovable.dev/projects/6f3b64f8-928a-470d-a608-141161bac4db
+- **Documentation**: See `README.md` and `PROJECT_SUBMISSION.md`
+- **Live Demo**: https://adtrust-ai.lovable.app/
 
----
-
-**Built with ❤️ for modern marketing teams**
