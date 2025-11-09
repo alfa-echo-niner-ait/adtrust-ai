@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X, Maximize2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -169,20 +169,21 @@ export default function GenerateVideo() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="aspectRatio" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
                   <Maximize2 className="h-4 w-4 text-primary" />
                   Aspect Ratio
                 </Label>
-                <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                  <SelectTrigger id="aspectRatio" className="bg-secondary/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
-                    <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <RadioGroup value={aspectRatio} onValueChange={setAspectRatio} className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="16:9" id="video-ratio-16-9" />
+                    <Label htmlFor="video-ratio-16-9" className="cursor-pointer font-normal">16:9 Widescreen</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="9:16" id="video-ratio-9-16" />
+                    <Label htmlFor="video-ratio-9-16" className="cursor-pointer font-normal">9:16 Vertical</Label>
+                  </div>
+                </RadioGroup>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">

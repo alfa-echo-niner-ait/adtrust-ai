@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Upload, X, Sparkles, Plus, Trash2, Palette, Maximize2 } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -157,23 +157,33 @@ const GeneratePoster = () => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="aspectRatio" className="flex items-center gap-2">
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
               <Maximize2 className="h-4 w-4" />
               Aspect Ratio
             </Label>
-            <Select value={aspectRatio} onValueChange={setAspectRatio}>
-              <SelectTrigger id="aspectRatio">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1:1">1:1 (Square)</SelectItem>
-                <SelectItem value="3:4">3:4 (Portrait)</SelectItem>
-                <SelectItem value="4:3">4:3 (Landscape)</SelectItem>
-                <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
-                <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
-              </SelectContent>
-            </Select>
+            <RadioGroup value={aspectRatio} onValueChange={setAspectRatio} className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="1:1" id="ratio-1-1" />
+                <Label htmlFor="ratio-1-1" className="cursor-pointer font-normal">1:1 Square</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="3:4" id="ratio-3-4" />
+                <Label htmlFor="ratio-3-4" className="cursor-pointer font-normal">3:4 Portrait</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="4:3" id="ratio-4-3" />
+                <Label htmlFor="ratio-4-3" className="cursor-pointer font-normal">4:3 Landscape</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="9:16" id="ratio-9-16" />
+                <Label htmlFor="ratio-9-16" className="cursor-pointer font-normal">9:16 Vertical</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="16:9" id="ratio-16-9" />
+                <Label htmlFor="ratio-16-9" className="cursor-pointer font-normal">16:9 Wide</Label>
+              </div>
+            </RadioGroup>
           </div>
 
           <div className="space-y-4">
