@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X, Maximize2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +13,7 @@ import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function GenerateVideo() {
   const [videoPrompt, setVideoPrompt] = useState('');
+  const [aspectRatio, setAspectRatio] = useState('16:9');
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -68,6 +70,7 @@ export default function GenerateVideo() {
           prompt: videoPrompt,
           brand_logo_url: finalBrandLogoUrl || null,
           product_image_url: finalProductImageUrl || null,
+          aspect_ratio: aspectRatio,
           status: 'pending'
         })
         .select()
@@ -84,7 +87,8 @@ export default function GenerateVideo() {
             videoId: videoData.id,
             prompt: videoPrompt,
             brandLogo: finalBrandLogoUrl || undefined,
-            productImage: finalProductImageUrl || undefined
+            productImage: finalProductImageUrl || undefined,
+            aspectRatio
           }
         }
       );
@@ -163,6 +167,22 @@ export default function GenerateVideo() {
                   rows={4}
                   className="bg-secondary/50 resize-none"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="aspectRatio" className="flex items-center gap-2">
+                  <Maximize2 className="h-4 w-4 text-primary" />
+                  Aspect Ratio
+                </Label>
+                <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                  <SelectTrigger id="aspectRatio" className="bg-secondary/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
+                    <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">

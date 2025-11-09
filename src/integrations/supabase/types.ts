@@ -58,6 +58,7 @@ export type Database = {
       }
       generated_posters: {
         Row: {
+          aspect_ratio: string | null
           brand_colors: string | null
           brand_logo_url: string | null
           created_at: string | null
@@ -70,6 +71,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          aspect_ratio?: string | null
           brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
@@ -82,6 +84,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          aspect_ratio?: string | null
           brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
@@ -97,6 +100,7 @@ export type Database = {
       }
       generated_videos: {
         Row: {
+          aspect_ratio: string | null
           brand_logo_url: string | null
           created_at: string | null
           id: string
@@ -107,6 +111,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          aspect_ratio?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
           id?: string
@@ -117,6 +122,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          aspect_ratio?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
           id?: string

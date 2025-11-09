@@ -22,7 +22,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { videoId, prompt, brandLogo, productImage } = await req.json();
+    const { videoId, prompt, brandLogo, productImage, aspectRatio = "16:9" } = await req.json();
 
     if (!videoId || !prompt) {
       return new Response(
@@ -31,7 +31,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Generating video with Google Veo:', { videoId, prompt, brandLogo, productImage });
+    console.log('Generating video with Google Veo:', { videoId, prompt, brandLogo, productImage, aspectRatio });
 
     // Enhance the prompt with brand assets context
     let enhancedPrompt = prompt;
@@ -58,7 +58,7 @@ serve(async (req) => {
               prompt: enhancedPrompt,
               parameters: {
                 sampleCount: 1,
-                aspectRatio: "16:9",
+                aspectRatio: aspectRatio,
                 outputMimeType: "video/mp4",
                 mode: "video"
               }

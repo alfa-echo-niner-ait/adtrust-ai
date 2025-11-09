@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, X, Sparkles, Plus, Trash2, Palette } from "lucide-react";
+import { Upload, X, Sparkles, Plus, Trash2, Palette, Maximize2 } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
 
 const GeneratePoster = () => {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
+  const [aspectRatio, setAspectRatio] = useState("1:1");
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [currentColor, setCurrentColor] = useState("#1E40AF");
   const [hexInput, setHexInput] = useState("");
@@ -96,6 +98,7 @@ const GeneratePoster = () => {
         brand_logo_url: brandLogoUrl,
         product_image_url: productImageUrl,
         brand_colors: brandColors.join(", "),
+        aspect_ratio: aspectRatio,
         status: "pending",
         })
         .select()
@@ -113,6 +116,7 @@ const GeneratePoster = () => {
           brandLogo: brandLogoUrl,
           productImage: productImageUrl,
           brandColors: brandColors.join(", "),
+          aspectRatio,
         },
       });
 
@@ -151,6 +155,25 @@ const GeneratePoster = () => {
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="aspectRatio" className="flex items-center gap-2">
+              <Maximize2 className="h-4 w-4" />
+              Aspect Ratio
+            </Label>
+            <Select value={aspectRatio} onValueChange={setAspectRatio}>
+              <SelectTrigger id="aspectRatio">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                <SelectItem value="3:4">3:4 (Portrait)</SelectItem>
+                <SelectItem value="4:3">4:3 (Landscape)</SelectItem>
+                <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+                <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-4">

@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { posterId, prompt, brandLogo, productImage, brandColors } = await req.json();
+    const { posterId, prompt, brandLogo, productImage, brandColors, aspectRatio = "1:1" } = await req.json();
 
     console.log("Generating poster for:", posterId);
 
@@ -46,10 +46,11 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: `Create a professional poster/image ad with the following requirements:\n${enhancedPrompt}\n\nMake it visually stunning, modern, and suitable for advertising.`,
+            content: `Create a professional poster/image ad with the following requirements:\n${enhancedPrompt}\n\nMake it visually stunning, modern, and suitable for advertising. Use aspect ratio ${aspectRatio}.`,
           },
         ],
         modalities: ["image", "text"],
+        aspectRatio: aspectRatio,
       }),
     });
 
