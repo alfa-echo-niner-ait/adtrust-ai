@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, Sparkles, Video, FileText, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Circle, Sparkles, Video, FileText, RefreshCw, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface WorkflowProgressProps {
@@ -18,10 +20,12 @@ interface WorkflowRun {
   final_scores: any;
   error_message: string | null;
   created_at: string;
+  generated_content_id: string | null;
 }
 
 export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
   const [workflow, setWorkflow] = useState<WorkflowRun | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadWorkflow();
@@ -141,7 +145,7 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
         </div>
 
         {workflow.final_scores && (
-          <div className="border-t pt-4">
+          <div className="border-t pt-4 space-y-4">
             <p className="text-sm font-medium mb-3">Final Scores</p>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
@@ -163,6 +167,22 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
                 <p className="text-xs text-muted-foreground">Safety</p>
               </div>
             </div>
+            
+            {workflow.status === "completed" && workflow.generated_content_id && (
+              <Button 
+                onClick={() => {
+                  const path = workflow.content_type === "video" 
+                    ? `/video/${workflow.generated_content_id}`
+                    : `/poster/${workflow.generated_content_id}`;
+                  navigate(path);
+                }}
+                className="w-full"
+                size="lg"
+              >
+                <ExternalLink className="mr-2 h-5 w-5" />
+                View Generated {workflow.content_type === "video" ? "Video" : "Poster"}
+              </Button>
+            )}
           </div>
         )}
 
