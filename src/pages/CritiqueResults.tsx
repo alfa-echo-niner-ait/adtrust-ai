@@ -2,12 +2,24 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Copy, CheckCheck, ArrowLeft, Video, ImageIcon as PosterIcon } from 'lucide-react';
+import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Copy, CheckCheck, ArrowLeft, Video, ImageIcon as PosterIcon, Trash2, Loader2 } from 'lucide-react';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { DetailedScoreBreakdown } from '@/components/DetailedScoreBreakdown';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { useDeleteContent } from '@/hooks/useDeleteContent';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface CritiqueData {
   id: string;
@@ -30,9 +42,11 @@ interface CritiqueData {
 export default function CritiqueResults() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { deleteCritique } = useDeleteContent();
   const [critique, setCritique] = useState<CritiqueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,6 +87,19 @@ export default function CritiqueResults() {
         description: "Refinement prompt has been copied successfully.",
       });
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !critique) return;
+    
+    setDeleting(true);
+    const success = await deleteCritique(id, critique.media_url);
+    
+    if (success) {
+      navigate('/dashboard');
+    } else {
+      setDeleting(false);
     }
   };
 
@@ -143,6 +170,32 @@ export default function CritiqueResults() {
                 Regenerate Poster
               </Button>
             )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={deleting}
+                  className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Critique</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this critique? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 

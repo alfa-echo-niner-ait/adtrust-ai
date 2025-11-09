@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to convert base64 to blob for storage
+async function uploadVideoToStorage(supabaseClient: any, videoBlob: Blob, videoId: string): Promise<string> {
+  const fileName = `videos/${videoId}-${Date.now()}.mp4`;
+  
+  const { error: uploadError } = await supabaseClient.storage
+    .from('video-assets')
+    .upload(fileName, videoBlob, {
+      contentType: 'video/mp4',
+      upsert: true
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabaseClient.storage
+    .from('video-assets')
+    .getPublicUrl(fileName);
+
+  return publicUrl;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,67 +53,58 @@ serve(async (req) => {
 
     console.log('Generating video with Google Veo:', { videoId, prompt, brandLogo, productImage, brandColors, aspectRatio });
 
-    // Build enhanced prompt with explicit brand requirements
-    let enhancedPrompt = `Create a professional advertising video with these requirements:
-
-${prompt}
-
-CRITICAL REQUIREMENTS:`;
-
-    if (brandColors) {
-      const colors = typeof brandColors === 'string' ? brandColors : brandColors.join(', ');
-      enhancedPrompt += `\n- PRIMARY REQUIREMENT: Use ONLY these exact brand colors throughout the video: ${colors}. These colors must be prominent and visible.`;
+    // Prepare reference images
+    const referenceImages = [];
+    
+    if (productImage) {
+      referenceImages.push({
+        referenceType: 'ASSET',
+        imageUri: productImage
+      });
     }
 
     if (brandLogo) {
-      enhancedPrompt += `\n- CRITICAL: Incorporate the brand logo (reference: ${brandLogo}) prominently in the video. Display it clearly and professionally.`;
+      referenceImages.push({
+        referenceType: 'ASSET',
+        imageUri: brandLogo
+      });
     }
 
-    if (productImage) {
-      enhancedPrompt += `\n- CRITICAL: Feature the product (reference: ${productImage}) as the focal point of the video advertisement.`;
+    // Build enhanced prompt
+    let enhancedPrompt = `Create a professional advertising video. ${prompt}.`;
+
+    if (brandColors) {
+      const colors = typeof brandColors === 'string' ? brandColors : brandColors.join(', ');
+      enhancedPrompt += ` Use these brand colors: ${colors}.`;
     }
 
-    enhancedPrompt += `\n\nVideo specifications:
-- Aspect ratio: ${aspectRatio}
-- Style: Modern, professional, engaging
-- Duration: Short format (15-30 seconds ideal)
-- Quality: High-resolution, suitable for commercial advertising
-- Pacing: Dynamic but clear messaging
+    enhancedPrompt += ' The video should incorporate the provided images seamlessly and be visually compelling.';
 
-Make it visually compelling and ready for commercial use.`;
-
-    // Call Google's Imagen 3 for video generation
-    // Note: As of now, Google's video generation API (Veo) is in limited preview
-    // Using Imagen 3 video generation endpoint
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GOOGLE_API_KEY}`,
+    // Call Google's Veo API for video generation
+    const generateResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:generateVideos?key=${GOOGLE_API_KEY}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          instances: [
-            {
-              prompt: enhancedPrompt,
-              parameters: {
-                sampleCount: 1,
-                aspectRatio: aspectRatio,
-                outputMimeType: "video/mp4",
-                mode: "video"
-              }
-            }
-          ]
+          prompt: enhancedPrompt,
+          config: {
+            numberOfVideos: 1,
+            referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+            resolution: '720p',
+            aspectRatio: aspectRatio === '9:16' ? '9:16' : '16:9'
+          }
         })
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Google Video API error:', response.status, errorText);
+    if (!generateResponse.ok) {
+      const errorText = await generateResponse.text();
+      console.error('Google Veo API error:', generateResponse.status, errorText);
       
-      // If video API is not available, fall back to a placeholder
-      // Update status to completed with a sample video
+      // Fallback to sample video
       await supabaseClient
         .from('generated_videos')
         .update({
@@ -112,19 +123,50 @@ Make it visually compelling and ready for commercial use.`;
       );
     }
 
-    const data = await response.json();
-    console.log('Google Video API response:', JSON.stringify(data, null, 2));
+    const operationData = await generateResponse.json();
+    const operationName = operationData.name;
 
-    // Extract video URL from response
-    const videoUrl = data.predictions?.[0]?.bytesBase64Encoded
-      ? `data:video/mp4;base64,${data.predictions[0].bytesBase64Encoded}`
-      : null;
-
-    if (!videoUrl) {
-      throw new Error('No video URL in response');
+    if (!operationName) {
+      throw new Error('No operation name returned from video generation');
     }
 
-    // Update the database with the generated video URL
+    console.log('Video generation started, operation:', operationName);
+
+    // Poll for completion
+    let operation = operationData;
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
+      
+      const pollResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${GOOGLE_API_KEY}`
+      );
+
+      if (!pollResponse.ok) {
+        throw new Error('Failed to poll operation status');
+      }
+
+      operation = await pollResponse.json();
+      console.log('Operation status:', operation.done ? 'completed' : 'in progress');
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+
+    if (!downloadLink) {
+      throw new Error('Video generation failed. No download link was provided.');
+    }
+
+    // Download the video
+    const videoResponse = await fetch(`${downloadLink}&key=${GOOGLE_API_KEY}`);
+    if (!videoResponse.ok) {
+      throw new Error('Failed to download the generated video.');
+    }
+
+    const videoBlob = await videoResponse.blob();
+
+    // Upload to Supabase Storage
+    const videoUrl = await uploadVideoToStorage(supabaseClient, videoBlob, videoId);
+
+    // Update the database
     const { error: updateError } = await supabaseClient
       .from('generated_videos')
       .update({
