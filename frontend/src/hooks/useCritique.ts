@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface CritiqueInput {
   mediaUrl: string;
@@ -42,28 +41,32 @@ export function useCritique() {
     setResult(null);
 
     try {
-      // Call the Google Gemini API through edge function
-      const { data: critiqueData, error: functionError } = await supabase.functions.invoke(
-        'critique-with-google',
-        {
-          body: {
-            mediaUrl: input.mediaUrl,
-            brandColors: input.brandColors,
-            caption: input.caption,
-            mediaType: input.mediaType || 'image'
-          }
-        }
-      );
+      const response = await fetch('http://localhost:5000/api/critique/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mediaUrl: input.mediaUrl,
+          brandColors: input.brandColors,
+          caption: input.caption,
+          mediaType: input.mediaType || 'image',
+          sourceType: input.sourceType || 'manual',
+          sourceId: input.sourceId || null,
+        }),
+      });
 
-      if (functionError) {
-        console.error('Edge function error:', functionError);
-        throw new Error(`Failed to run critique: ${functionError.message}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
       }
+
+      const critiqueData = await response.json();
 
       if (!critiqueData) {
         throw new Error('No data returned from critique function');
       }
-
+      
       const result: CritiqueResult = {
         BrandFit_Score: critiqueData.BrandFit_Score,
         VisualQuality_Score: critiqueData.VisualQuality_Score,
@@ -78,32 +81,7 @@ export function useCritique() {
 
       setResult(result);
 
-      // Save to database
-      const { data, error: dbError } = await supabase
-        .from('critiques')
-        .insert({
-          media_url: input.mediaUrl,
-          media_type: input.mediaType || 'image',
-          brand_colors: input.brandColors,
-          caption: input.caption,
-          brand_fit_score: result.BrandFit_Score,
-          visual_quality_score: result.VisualQuality_Score,
-          message_clarity_score: result.MessageClarity_Score,
-          tone_of_voice_score: result.ToneOfVoice_Score,
-          safety_score: result.Safety_Score,
-          brand_validation: result.BrandValidation,
-          safety_breakdown: result.SafetyBreakdown,
-          critique_summary: result.Critique_Summary,
-          refinement_prompt: result.Refinement_Prompt_Suggestion,
-          source_type: input.sourceType || 'manual',
-          source_id: input.sourceId || null,
-        })
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      return data?.id || null;
+      return critiqueData.critiqueId || null;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during critique');
       return null;

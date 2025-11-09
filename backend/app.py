@@ -30,12 +30,14 @@ def create_app(config_name=None):
     from api.critique import critique_bp
     from api.workflow import workflow_bp
     from api.health import health_bp
+    from api.approval import approval_bp
     
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(poster_bp, url_prefix='/api/poster')
     app.register_blueprint(video_bp, url_prefix='/api/video')
     app.register_blueprint(critique_bp, url_prefix='/api/critique')
     app.register_blueprint(workflow_bp, url_prefix='/api/workflow')
+    app.register_blueprint(approval_bp, url_prefix='/api/approval')
     
     # Error handlers
     @app.errorhandler(400)

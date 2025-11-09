@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CheckCircle2, XCircle, Eye, Video, Image } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface ApprovalCardProps {
@@ -42,22 +41,13 @@ export const ApprovalCard = ({
   const handleApprove = async () => {
     setLoading(true);
     try {
-      const table = type === "video" ? "generated_videos" : "generated_posters";
-      const { error: updateError } = await supabase
-        .from(table)
-        .update({
-          approval_status: "approved",
-          approved_at: new Date().toISOString(),
-        })
-        .eq("id", id);
-
-      if (updateError) throw updateError;
-
-      await supabase.from("approval_history").insert({
-        content_type: type,
-        content_id: id,
-        action: "approved",
+      const response = await fetch(`http://localhost:5000/api/approval/${type}/${id}/approve`, {
+        method: 'POST',
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to approve content');
+      }
 
       toast.success("Content approved successfully");
       onStatusChange();
@@ -77,23 +67,17 @@ export const ApprovalCard = ({
 
     setLoading(true);
     try {
-      const table = type === "video" ? "generated_videos" : "generated_posters";
-      const { error: updateError } = await supabase
-        .from(table)
-        .update({
-          approval_status: "rejected",
-          rejection_reason: rejectionReason,
-        })
-        .eq("id", id);
-
-      if (updateError) throw updateError;
-
-      await supabase.from("approval_history").insert({
-        content_type: type,
-        content_id: id,
-        action: "rejected",
-        notes: rejectionReason,
+      const response = await fetch(`http://localhost:5000/api/approval/${type}/${id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rejection_reason: rejectionReason }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject content');
+      }
 
       toast.success("Content rejected");
       onStatusChange();

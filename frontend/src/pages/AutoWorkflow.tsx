@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { WorkflowProgress } from "@/components/WorkflowProgress";
 import { Sparkles, Loader2, Upload, X, Palette } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useWorkflow } from "@/hooks/useWorkflow";
 import { extractColorsFromImage } from "@/lib/colorExtraction";
 
 const AutoWorkflow = () => {
@@ -24,10 +24,20 @@ const AutoWorkflow = () => {
   const [productImage, setProductImage] = useState<File | null>(null);
   const [brandLogoPreview, setBrandLogoPreview] = useState<string | null>(null);
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
-  const [running, setRunning] = useState(false);
+  const { loading: running, error, result, runWorkflow } = useWorkflow();
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
   const [extractingColors, setExtractingColors] = useState(false);
+
+  useEffect(() => {
+    if (result) {
+      setWorkflowId(result.workflow_id);
+      toast.success("Multi-agent workflow started!");
+    }
+    if (error) {
+      toast.error(error);
+    }
+  }, [result, error]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
     const file = e.target.files?.[0];
@@ -106,71 +116,21 @@ const AutoWorkflow = () => {
     setBrandColors(brandColors.filter((color) => color !== colorToRemove));
   };
 
-  const uploadFile = async (file: File, bucket: string) => {
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file);
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(fileName);
-
-    return publicUrl;
-  };
-
   const handleStart = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt");
       return;
     }
 
-    setRunning(true);
-    try {
-      let brandLogoUrl = null;
-      let productImageUrl = null;
-
-      if (brandLogo) {
-        brandLogoUrl = await uploadFile(brandLogo, "video-assets");
-      }
-
-      if (productImage) {
-        productImageUrl = await uploadFile(productImage, "video-assets");
-      }
-
-      const { data: workflowData, error: workflowError } = await supabase
-        .from("workflow_runs")
-        .insert({
-          content_type: contentType,
-          prompt,
-          brand_logo_url: brandLogoUrl,
-          product_image_url: productImageUrl,
-          brand_colors: brandColors.length > 0 ? brandColors.join(", ") : null,
-          aspect_ratio: aspectRatio,
-        })
-        .select()
-        .single();
-
-      if (workflowError) throw workflowError;
-
-      setWorkflowId(workflowData.id);
-
-      const { error: functionError } = await supabase.functions.invoke("auto-workflow", {
-        body: { workflowId: workflowData.id },
-      });
-
-      if (functionError) throw functionError;
-
-      toast.success("Multi-agent workflow started!");
-    } catch (error) {
-      console.error("Error starting workflow:", error);
-      toast.error("Failed to start workflow");
-      setRunning(false);
-      setWorkflowId(null);
+    if (brandLogo || productImage) {
+      toast.info("File uploads are not yet supported in this version.");
     }
+
+    await runWorkflow({
+      prompt,
+      brandColors,
+      brandName: "Brand", // This should be dynamic
+    });
   };
 
   return (
@@ -277,7 +237,7 @@ const AutoWorkflow = () => {
                       </div>
                     </div>
                   ) : (
-                    <label htmlFor="logo" className="cursor-pointer block p-6 text-center aspect-square flex flex-col items-center justify-center">
+                    <label htmlFor="logo" className="cursor-pointer p-6 text-center aspect-square flex flex-col items-center justify-center">
                       <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">Upload brand logo</p>
                     </label>
@@ -320,7 +280,7 @@ const AutoWorkflow = () => {
                       </div>
                     </div>
                   ) : (
-                    <label htmlFor="product" className="cursor-pointer block p-6 text-center aspect-square flex flex-col items-center justify-center">
+                    <label htmlFor="product" className="cursor-pointer p-6 text-center aspect-square flex flex-col items-center justify-center">
                       <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">Upload product image</p>
                     </label>

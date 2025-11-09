@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { usePoster } from "@/hooks/usePoster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ const GeneratePoster = () => {
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
-  const [generating, setGenerating] = useState(false);
+  const { loading: generating, error, result, generatePoster } = usePoster();
   const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
   const [extractingColors, setExtractingColors] = useState(false);
 
@@ -34,6 +34,16 @@ const GeneratePoster = () => {
       if (location.state.aspectRatio) setAspectRatio(location.state.aspectRatio);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (result) {
+      toast.success("Poster generation started!");
+      navigate(`/poster/${result.id}`);
+    }
+    if (error) {
+      toast.error(error);
+    }
+  }, [result, error, navigate]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
     const file = e.target.files?.[0];
@@ -89,78 +99,23 @@ const GeneratePoster = () => {
     setBrandColors(brandColors.filter((color) => color !== colorToRemove));
   };
 
-  const uploadFile = async (file: File, path: string) => {
-    const { data, error } = await supabase.storage
-      .from("video-assets")
-      .upload(path, file, { upsert: true });
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from("video-assets")
-      .getPublicUrl(data.path);
-
-    return publicUrl;
-  };
-
   const handleGeneratePoster = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt");
       return;
     }
 
-    setGenerating(true);
-
-    try {
-      let brandLogoUrl = null;
-      let productImageUrl = null;
-
-      if (brandLogoFile) {
-        brandLogoUrl = await uploadFile(brandLogoFile, `logos/${Date.now()}-${brandLogoFile.name}`);
-      }
-
-      if (productImageFile) {
-        productImageUrl = await uploadFile(productImageFile, `products/${Date.now()}-${productImageFile.name}`);
-      }
-
-      const { data: posterData, error: insertError } = await supabase
-        .from("generated_posters")
-        .insert({
-        prompt,
-        brand_logo_url: brandLogoUrl,
-        product_image_url: productImageUrl,
-        brand_colors: brandColors.join(", "),
-        aspect_ratio: aspectRatio,
-        status: "pending",
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      toast.success("Poster generation started!");
-      
-      // Call edge function to generate poster
-      const { error: functionError } = await supabase.functions.invoke("generate-poster-google", {
-        body: {
-          posterId: posterData.id,
-          prompt,
-          brandLogo: brandLogoUrl,
-          productImage: productImageUrl,
-          brandColors: brandColors.join(", "),
-          aspectRatio,
-        },
-      });
-
-      if (functionError) throw functionError;
-
-      navigate(`/poster/${posterData.id}`);
-    } catch (error) {
-      console.error("Error generating poster:", error);
-      toast.error("Failed to generate poster");
-    } finally {
-      setGenerating(false);
+    // TODO: Handle file uploads to a backend service if needed, for now we don't support it.
+    if (brandLogoFile || productImageFile) {
+      toast.info("File uploads are not yet supported in this version.");
     }
+
+    await generatePoster({
+      prompt,
+      brandColors,
+      brandName: "Brand", // This should be dynamic
+      aspectRatio,
+    });
   };
 
   return (

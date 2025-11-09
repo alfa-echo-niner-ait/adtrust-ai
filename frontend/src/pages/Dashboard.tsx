@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,33 +48,23 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      const { data: videosData, error: videosError } = await supabase
-        .from("generated_videos")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(6);
+      const [videosResponse, critiquesResponse, postersResponse] = await Promise.all([
+        fetch('http://localhost:5000/api/video?limit=6'),
+        fetch('http://localhost:5000/api/critique?limit=6'),
+        fetch('http://localhost:5000/api/poster?limit=6')
+      ]);
 
-      if (videosError) throw videosError;
+      if (!videosResponse.ok || !critiquesResponse.ok || !postersResponse.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
 
-      const { data: critiquesData, error: critiquesError } = await supabase
-        .from("critiques")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(6);
+      const videosData = await videosResponse.json();
+      const critiquesData = await critiquesResponse.json();
+      const postersData = await postersResponse.json();
 
-      if (critiquesError) throw critiquesError;
-
-      const { data: postersData, error: postersError } = await supabase
-        .from("generated_posters")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(6);
-
-      if (postersError) throw postersError;
-
-      setVideos(videosData || []);
-      setCritiques(critiquesData || []);
-      setPosters(postersData || []);
+      setVideos(videosData.videos || []);
+      setCritiques(critiquesData.critiques || []);
+      setPosters(postersData.posters || []);
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("Failed to load dashboard data");

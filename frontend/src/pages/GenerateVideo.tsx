@@ -9,7 +9,7 @@ import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X, Maximize2, Pa
 import { ColorPicker } from '@/components/ColorPicker';
 import { ColorDisplay } from '@/components/ColorDisplay';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useVideo } from '@/hooks/useVideo';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { extractColorsFromImage } from '@/lib/colorExtraction';
@@ -21,9 +21,7 @@ export default function GenerateVideo() {
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
-  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const { loading: generating, error, result, generateVideo } = useVideo();
   const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
   const [extractingColors, setExtractingColors] = useState(false);
   const { toast } = useToast();
@@ -37,6 +35,23 @@ export default function GenerateVideo() {
       if (location.state.aspectRatio) setAspectRatio(location.state.aspectRatio);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (result) {
+      toast({
+        title: "Video Generated",
+        description: "Your video has been generated successfully.",
+      });
+      navigate(`/video/${result.id}`);
+    }
+    if (error) {
+      toast({
+        title: "Generation Failed",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [result, error, navigate, toast]);
 
   const handleAddColor = (color: string) => {
     if (!brandColors.includes(color)) {
@@ -108,24 +123,6 @@ export default function GenerateVideo() {
     }
   };
 
-  const uploadFile = async (file: File, type: 'logo' | 'product'): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${type}-${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('video-assets')
-      .upload(filePath, file);
-
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('video-assets')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  };
-
   const handleGenerateVideo = async () => {
     if (!videoPrompt.trim()) {
       toast({
@@ -136,88 +133,23 @@ export default function GenerateVideo() {
       return;
     }
 
-    setGenerating(true);
-    try {
-      let finalBrandLogoUrl: string | null = null;
-      let finalProductImageUrl: string | null = null;
-
-      // Upload files if provided
-      if (brandLogoFile) {
-        finalBrandLogoUrl = await uploadFile(brandLogoFile, 'logo');
-      }
-      if (productImageFile) {
-        finalProductImageUrl = await uploadFile(productImageFile, 'product');
-      }
-
-      // Insert initial record
-      const { data: videoData, error: insertError } = await supabase
-        .from('generated_videos')
-        .insert({
-          prompt: videoPrompt,
-          brand_logo_url: finalBrandLogoUrl || null,
-          product_image_url: finalProductImageUrl || null,
-          brand_colors: brandColors.length > 0 ? brandColors.join(', ') : null,
-          aspect_ratio: aspectRatio,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-      setCurrentVideoId(videoData.id);
-
-      // Call Google video generation edge function
-      const { data: functionData, error: functionError } = await supabase.functions.invoke(
-        'generate-video-google',
-        {
-          body: {
-            videoId: videoData.id,
-            prompt: videoPrompt,
-            brandLogo: finalBrandLogoUrl || undefined,
-            productImage: finalProductImageUrl || undefined,
-            aspectRatio
-          }
-        }
-      );
-
-      if (functionError) {
-        console.error('Edge function error:', functionError);
-        throw new Error(`Failed to generate video: ${functionError.message}`);
-      }
-
-      if (!functionData?.videoUrl) {
-        throw new Error('No video URL returned');
-      }
-
-      setGeneratedVideoUrl(functionData.videoUrl);
-
+    if (brandLogoFile || productImageFile) {
       toast({
-        title: "Video Generated",
-        description: functionData.message || "Your video has been generated successfully.",
+        title: "File uploads not supported",
+        description: "File uploads are not yet supported in this version.",
       });
-    } catch (error) {
-      console.error('Error generating video:', error);
-      toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate video. Please try again.",
-        variant: "destructive",
-      });
-
-      // Update status to failed
-      if (currentVideoId) {
-        await supabase
-          .from('generated_videos')
-          .update({ status: 'failed' })
-          .eq('id', currentVideoId);
-      }
-    } finally {
-      setGenerating(false);
     }
+
+    await generateVideo({
+      prompt: videoPrompt,
+      brandName: "Brand", // This should be dynamic
+      aspectRatio,
+    });
   };
 
   const handleSaveAndCritique = () => {
-    if (generatedVideoUrl) {
-      navigate('/critique', { state: { videoUrl: generatedVideoUrl } });
+    if (result) {
+      navigate('/critique', { state: { videoUrl: result.video_url } });
     }
   };
 
@@ -454,7 +386,7 @@ export default function GenerateVideo() {
           </CardContent>
         </Card>
 
-        {generatedVideoUrl && (
+        {result && (
           <Card className="border-border shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -467,7 +399,7 @@ export default function GenerateVideo() {
               <div className="space-y-4">
                 <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
                   <video
-                    src={generatedVideoUrl}
+                    src={result.video_url}
                     controls
                     className="w-full h-full"
                   >
