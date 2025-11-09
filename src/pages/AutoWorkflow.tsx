@@ -77,6 +77,7 @@ const AutoWorkflow = () => {
     const newColors = suggestedColors.filter(color => !brandColors.includes(color));
     if (newColors.length > 0) {
       setBrandColors([...brandColors, ...newColors]);
+      setSuggestedColors([]); // Clear suggestions
       toast.success(`Added ${newColors.length} colors`);
     } else {
       toast.info('All suggested colors already added');

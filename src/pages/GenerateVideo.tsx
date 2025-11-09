@@ -95,6 +95,7 @@ export default function GenerateVideo() {
     const newColors = suggestedColors.filter(color => !brandColors.includes(color));
     if (newColors.length > 0) {
       setBrandColors([...brandColors, ...newColors]);
+      setSuggestedColors([]); // Clear suggestions
       toast({
         title: "Colors Added",
         description: `Added ${newColors.length} colors to your palette`,

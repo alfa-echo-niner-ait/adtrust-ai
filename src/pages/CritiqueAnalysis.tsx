@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Video, Upload, Trash2 } from 'lucide-react';
 import { ColorPicker } from '@/components/ColorPicker';
 import { ColorDisplay } from '@/components/ColorDisplay';
+import { extractColorsFromImage } from '@/lib/colorExtraction';
 import { useCritique } from '@/hooks/useCritique';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,8 @@ export default function CritiqueAnalysis() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
+  const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
+  const [extractingColors, setExtractingColors] = useState(false);
   
   const { loading, error, result, runCritique } = useCritique();
   const { toast } = useToast();
@@ -41,12 +44,41 @@ export default function CritiqueAnalysis() {
     }
   }, [location.state]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadedFile(file);
       const url = URL.createObjectURL(file);
       setMediaUrl(url);
+      
+      // Extract colors only from images
+      if (mediaType === 'image') {
+        setExtractingColors(true);
+        try {
+          const colors = await extractColorsFromImage(file, 5);
+          setSuggestedColors(colors);
+          toast({
+            title: "Colors Extracted",
+            description: `Found ${colors.length} dominant colors`,
+          });
+        } catch (error) {
+          console.error('Error extracting colors:', error);
+        } finally {
+          setExtractingColors(false);
+        }
+      }
+    }
+  };
+
+  const handleAddSuggestedColors = () => {
+    const newColors = suggestedColors.filter(color => !brandColors.includes(color));
+    if (newColors.length > 0) {
+      setBrandColors([...brandColors, ...newColors]);
+      setSuggestedColors([]); // Clear suggestions after adding
+      toast({
+        title: "Colors Added",
+        description: `Added ${newColors.length} colors`,
+      });
     }
   };
 
@@ -69,6 +101,7 @@ export default function CritiqueAnalysis() {
   const clearMedia = () => {
     setMediaUrl('');
     setUploadedFile(null);
+    setSuggestedColors([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -239,6 +272,40 @@ export default function CritiqueAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Brand Colors *</Label>
+                {extractingColors && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Extracting...
+                  </span>
+                )}
+              </div>
+              
+              {suggestedColors.length > 0 && (
+                <div className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Suggested Colors
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddSuggestedColors}
+                    >
+                      Add All
+                    </Button>
+                  </div>
+                  <ColorDisplay
+                    colors={suggestedColors}
+                    onRemoveColor={() => {}}
+                    showRemove={false}
+                  />
+                </div>
+              )}
+              
               <ColorPicker onAddColor={handleAddColor} disabled={loading} />
               <ColorDisplay 
                 colors={brandColors} 
