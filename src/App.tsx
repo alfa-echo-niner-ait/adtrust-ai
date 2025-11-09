@@ -12,6 +12,8 @@ import VideoDetails from "./pages/VideoDetails";
 import PosterDetails from "./pages/PosterDetails";
 import CritiqueAnalysis from "./pages/CritiqueAnalysis";
 import CritiqueResults from "./pages/CritiqueResults";
+import AutoWorkflow from "./pages/AutoWorkflow";
+import ReviewQueue from "./pages/ReviewQueue";
 import MigrationSetup from "./pages/MigrationSetup";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +36,8 @@ const App = () => (
               <Route path="/poster/:id" element={<PosterDetails />} />
               <Route path="/critique" element={<CritiqueAnalysis />} />
               <Route path="/results/:id" element={<CritiqueResults />} />
+              <Route path="/auto-workflow" element={<AutoWorkflow />} />
+              <Route path="/review-queue" element={<ReviewQueue />} />
               <Route path="/migration-setup" element={<MigrationSetup />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

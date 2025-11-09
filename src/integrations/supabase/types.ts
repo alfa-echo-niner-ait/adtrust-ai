@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      approval_history: {
+        Row: {
+          action: string
+          actor_id: string | null
+          content_id: string
+          content_type: string
+          created_at: string | null
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
       critiques: {
         Row: {
           brand_colors: string
@@ -64,84 +94,195 @@ export type Database = {
       }
       generated_posters: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           aspect_ratio: string | null
           brand_colors: string | null
           brand_logo_url: string | null
           created_at: string | null
+          critique_id: string | null
           dimensions: string | null
           id: string
           poster_url: string | null
           product_image_url: string | null
           prompt: string
+          rejection_reason: string | null
           status: string
           updated_at: string | null
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           aspect_ratio?: string | null
           brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
+          critique_id?: string | null
           dimensions?: string | null
           id?: string
           poster_url?: string | null
           product_image_url?: string | null
           prompt: string
+          rejection_reason?: string | null
           status?: string
           updated_at?: string | null
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           aspect_ratio?: string | null
           brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
+          critique_id?: string | null
           dimensions?: string | null
           id?: string
           poster_url?: string | null
           product_image_url?: string | null
           prompt?: string
+          rejection_reason?: string | null
           status?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "generated_posters_critique_id_fkey"
+            columns: ["critique_id"]
+            isOneToOne: false
+            referencedRelation: "critiques"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       generated_videos: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           aspect_ratio: string | null
           brand_colors: string | null
           brand_logo_url: string | null
           created_at: string | null
+          critique_id: string | null
           id: string
           product_image_url: string | null
           prompt: string
+          rejection_reason: string | null
           status: string
           updated_at: string | null
           video_url: string | null
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           aspect_ratio?: string | null
           brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
+          critique_id?: string | null
           id?: string
           product_image_url?: string | null
           prompt: string
+          rejection_reason?: string | null
           status?: string
           updated_at?: string | null
           video_url?: string | null
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           aspect_ratio?: string | null
           brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
+          critique_id?: string | null
           id?: string
           product_image_url?: string | null
           prompt?: string
+          rejection_reason?: string | null
           status?: string
           updated_at?: string | null
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "generated_videos_critique_id_fkey"
+            columns: ["critique_id"]
+            isOneToOne: false
+            referencedRelation: "critiques"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_runs: {
+        Row: {
+          aspect_ratio: string | null
+          brand_colors: string | null
+          brand_logo_url: string | null
+          content_type: string
+          created_at: string | null
+          critique_id: string | null
+          current_step: string
+          error_message: string | null
+          final_scores: Json | null
+          generated_content_id: string | null
+          id: string
+          iteration_count: number | null
+          product_image_url: string | null
+          prompt: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          brand_colors?: string | null
+          brand_logo_url?: string | null
+          content_type: string
+          created_at?: string | null
+          critique_id?: string | null
+          current_step?: string
+          error_message?: string | null
+          final_scores?: Json | null
+          generated_content_id?: string | null
+          id?: string
+          iteration_count?: number | null
+          product_image_url?: string | null
+          prompt: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          aspect_ratio?: string | null
+          brand_colors?: string | null
+          brand_logo_url?: string | null
+          content_type?: string
+          created_at?: string | null
+          critique_id?: string | null
+          current_step?: string
+          error_message?: string | null
+          final_scores?: Json | null
+          generated_content_id?: string | null
+          id?: string
+          iteration_count?: number | null
+          product_image_url?: string | null
+          prompt?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_critique_id_fkey"
+            columns: ["critique_id"]
+            isOneToOne: false
+            referencedRelation: "critiques"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

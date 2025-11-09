@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Video, FileText, TrendingUp, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Video, FileText, TrendingUp, Image as ImageIcon, Workflow, ClipboardList } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface GeneratedVideo {
@@ -109,19 +109,19 @@ const Dashboard = () => {
       
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold">Creative AI Studio</h1>
+          <h1 className="text-4xl font-bold text-gradient">AdTrust</h1>
           <p className="text-muted-foreground mt-2">
-            Generate videos, posters, and analyze your ad content with AI
+            AI-Powered Quality Control for Generated Ads
           </p>
         </div>
         <div className="flex gap-3 flex-wrap">
-          <Button onClick={() => navigate("/generate")}>
-            <Video className="mr-2 h-4 w-4" />
-            Generate Video
+          <Button onClick={() => navigate("/auto-workflow")} className="gradient-primary shadow-glow">
+            <Workflow className="mr-2 h-4 w-4" />
+            Auto Workflow
           </Button>
-          <Button onClick={() => navigate("/generate-poster")}>
-            <ImageIcon className="mr-2 h-4 w-4" />
-            Generate Poster
+          <Button onClick={() => navigate("/review-queue")} variant="outline">
+            <ClipboardList className="mr-2 h-4 w-4" />
+            Review Queue
           </Button>
           <Button onClick={() => navigate("/critique")} variant="outline">
             <FileText className="mr-2 h-4 w-4" />
@@ -232,7 +232,7 @@ const Dashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
+              <ImageIcon className="h-5 w-5" />
               Recent Posters
             </CardTitle>
             <CardDescription>Latest poster generations</CardDescription>
