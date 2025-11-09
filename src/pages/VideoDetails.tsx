@@ -4,10 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, Calendar, Image, Sparkles, Palette } from "lucide-react";
+import { ArrowLeft, Download, Calendar, Image, Sparkles, Palette, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ColorDisplay } from "@/components/ColorDisplay";
+import { useDeleteContent } from "@/hooks/useDeleteContent";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface VideoDetails {
   id: string;
@@ -24,8 +36,10 @@ interface VideoDetails {
 const VideoDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { deleteVideo } = useDeleteContent();
   const [video, setVideo] = useState<VideoDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadVideoDetails();
@@ -67,6 +81,24 @@ const VideoDetails = () => {
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Failed to download video");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !video) return;
+    
+    setDeleting(true);
+    const success = await deleteVideo(
+      id,
+      video.video_url,
+      video.brand_logo_url,
+      video.product_image_url
+    );
+    
+    if (success) {
+      navigate('/dashboard');
+    } else {
+      setDeleting(false);
     }
   };
 
@@ -138,6 +170,32 @@ const VideoDetails = () => {
                 <Download className="mr-2 h-4 w-4" />
                 Download
               </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={deleting}
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Video</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this video? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>

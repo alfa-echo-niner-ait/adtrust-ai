@@ -175,6 +175,7 @@ export default function GenerateVideo() {
             prompt: videoPrompt,
             brandLogo: finalBrandLogoUrl || undefined,
             productImage: finalProductImageUrl || undefined,
+            brandColors: brandColors.length > 0 ? brandColors : undefined,
             aspectRatio
           }
         }

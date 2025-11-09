@@ -4,10 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, Calendar, Image, Palette, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, Calendar, Image, Palette, Sparkles, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ColorDisplay } from "@/components/ColorDisplay";
+import { useDeleteContent } from "@/hooks/useDeleteContent";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface PosterDetails {
   id: string;
@@ -24,8 +36,10 @@ interface PosterDetails {
 const PosterDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { deletePoster } = useDeleteContent();
   const [poster, setPoster] = useState<PosterDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadPosterDetails();
@@ -67,6 +81,24 @@ const PosterDetails = () => {
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Failed to download poster");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !poster) return;
+    
+    setDeleting(true);
+    const success = await deletePoster(
+      id,
+      poster.poster_url,
+      poster.brand_logo_url,
+      poster.product_image_url
+    );
+    
+    if (success) {
+      navigate('/dashboard');
+    } else {
+      setDeleting(false);
     }
   };
 
@@ -138,6 +170,32 @@ const PosterDetails = () => {
                 <Download className="mr-2 h-4 w-4" />
                 Download
               </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={deleting}
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Poster</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this poster? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>
