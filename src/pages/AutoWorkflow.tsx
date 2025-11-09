@@ -9,7 +9,7 @@ import { ColorPicker } from "@/components/ColorPicker";
 import { ColorDisplay } from "@/components/ColorDisplay";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { WorkflowProgress } from "@/components/WorkflowProgress";
-import { Sparkles, Loader2, Upload } from "lucide-react";
+import { Sparkles, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -40,6 +40,16 @@ const AutoWorkflow = () => {
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveFile = (type: 'logo' | 'product') => {
+    if (type === 'logo') {
+      setBrandLogo(null);
+      setBrandLogoPreview(null);
+    } else {
+      setProductImage(null);
+      setProductImagePreview(null);
     }
   };
 
@@ -224,15 +234,27 @@ const AutoWorkflow = () => {
                     disabled={running}
                   />
                   {brandLogoPreview ? (
-                    <div className="relative aspect-square">
+                    <div className="relative aspect-square group">
                       <img
                         src={brandLogoPreview}
                         alt="Brand logo preview"
                         className="w-full h-full object-contain p-4"
                       />
-                      <label htmlFor="logo" className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
-                        <p className="text-white text-sm">Change logo</p>
-                      </label>
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <label htmlFor="logo" className="cursor-pointer bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors text-sm">
+                          Change
+                        </label>
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveFile('logo')}
+                          variant="destructive"
+                          size="sm"
+                          disabled={running}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <label htmlFor="logo" className="cursor-pointer block p-6 text-center aspect-square flex flex-col items-center justify-center">
@@ -255,15 +277,27 @@ const AutoWorkflow = () => {
                     disabled={running}
                   />
                   {productImagePreview ? (
-                    <div className="relative aspect-square">
+                    <div className="relative aspect-square group">
                       <img
                         src={productImagePreview}
                         alt="Product preview"
                         className="w-full h-full object-contain p-4"
                       />
-                      <label htmlFor="product" className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
-                        <p className="text-white text-sm">Change product</p>
-                      </label>
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <label htmlFor="product" className="cursor-pointer bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors text-sm">
+                          Change
+                        </label>
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveFile('product')}
+                          variant="destructive"
+                          size="sm"
+                          disabled={running}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <label htmlFor="product" className="cursor-pointer block p-6 text-center aspect-square flex flex-col items-center justify-center">
