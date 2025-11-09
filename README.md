@@ -401,20 +401,6 @@ gunicorn -w 4 -b 0.0.0.0:5000 'app:create_app()'
 npm test
 ```
 
-### Python Backend
-```bash
-cd python-backend
-
-# Run all tests
-pytest
-
-# With coverage report
-pytest --cov=. --cov-report=html
-
-# Run specific test file
-pytest tests/test_api.py
-```
-
 ## 📝 Environment Variables
 
 ### Frontend (.env - auto-configured)
@@ -428,32 +414,11 @@ VITE_SUPABASE_PROJECT_ID=<your-project-id>
 - `GOOGLE_API_KEY` - Google AI Studio API key
 - `LOVABLE_API_KEY` - Lovable AI API key
 
-### Python Backend (.env)
-```env
-FLASK_ENV=development
-DATABASE_URL=postgresql://user:password@localhost:5432/adtrust
-GOOGLE_API_KEY=your_google_api_key
-LOVABLE_API_KEY=your_lovable_api_key
-SECRET_KEY=your_secret_key
-```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📄 License
 
-Proprietary - AdTrust Platform
-
-## 🔗 Links
-
-- **Project URL**: https://lovable.dev/projects/6f3b64f8-928a-470d-a608-141161bac4db
-- **Documentation**: https://docs.lovable.dev/
-- **Support**: https://discord.com/channels/1119885301872070706
+MIT
 
 ## 💡 Tips & Best Practices
 
@@ -493,13 +458,6 @@ Proprietary - AdTrust Platform
 **Issue**: Workflow stuck in processing
 - **Solution**: Check edge function logs in Lovable Cloud dashboard
 
-## 📞 Support
-
-For issues, questions, or feature requests:
-- Open an issue on GitHub
-- Join Lovable Discord community
-- Check documentation at docs.lovable.dev
-
 ---
 
-**Built with ❤️ using Lovable**
+**Built with ❤️ using Lovable during Hack-Nation Global AI Online Hackathon** 
