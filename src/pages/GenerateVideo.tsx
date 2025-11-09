@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X, Maximize2 } from 'lucide-react';
+import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X, Maximize2, Palette } from 'lucide-react';
 import { ColorPicker } from '@/components/ColorPicker';
 import { ColorDisplay } from '@/components/ColorDisplay';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { extractColorsFromImage } from '@/lib/colorExtraction';
 
 export default function GenerateVideo() {
   const location = useLocation();
@@ -23,6 +24,8 @@ export default function GenerateVideo() {
   const [generating, setGenerating] = useState(false);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
+  const [extractingColors, setExtractingColors] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -49,6 +52,59 @@ export default function GenerateVideo() {
 
   const handleRemoveColor = (colorToRemove: string) => {
     setBrandColors(brandColors.filter(color => color !== colorToRemove));
+  };
+
+  const handleFileChange = async (file: File | undefined, type: 'logo' | 'product') => {
+    if (!file) return;
+    
+    if (type === 'logo') setBrandLogoFile(file);
+    else setProductImageFile(file);
+
+    // Extract colors from image
+    setExtractingColors(true);
+    try {
+      const colors = await extractColorsFromImage(file, 5);
+      setSuggestedColors(colors);
+      toast({
+        title: "Colors Extracted",
+        description: `Found ${colors.length} dominant colors from image`,
+      });
+    } catch (error) {
+      console.error('Error extracting colors:', error);
+      toast({
+        title: "Extraction Failed",
+        description: "Could not extract colors from image",
+        variant: "destructive",
+      });
+    } finally {
+      setExtractingColors(false);
+    }
+  };
+
+  const handleRemoveFile = (type: 'logo' | 'product') => {
+    if (type === 'logo') setBrandLogoFile(null);
+    else setProductImageFile(null);
+    
+    // Clear suggested colors when all images are removed
+    if ((type === 'logo' && !productImageFile) || (type === 'product' && !brandLogoFile)) {
+      setSuggestedColors([]);
+    }
+  };
+
+  const handleAddSuggestedColors = () => {
+    const newColors = suggestedColors.filter(color => !brandColors.includes(color));
+    if (newColors.length > 0) {
+      setBrandColors([...brandColors, ...newColors]);
+      toast({
+        title: "Colors Added",
+        description: `Added ${newColors.length} colors to your palette`,
+      });
+    } else {
+      toast({
+        title: "Already Added",
+        description: "All suggested colors are already in your palette",
+      });
+    }
   };
 
   const uploadFile = async (file: File, type: 'logo' | 'product'): Promise<string> => {
@@ -216,15 +272,6 @@ export default function GenerateVideo() {
                 </RadioGroup>
               </div>
 
-              <div className="space-y-4 p-6 rounded-lg border bg-card">
-                <ColorPicker onAddColor={handleAddColor} disabled={generating} />
-                <ColorDisplay 
-                  colors={brandColors} 
-                  onRemoveColor={handleRemoveColor}
-                  disabled={generating}
-                />
-              </div>
-
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Brand Logo Upload */}
                 <div className="space-y-3">
@@ -249,10 +296,7 @@ export default function GenerateVideo() {
                         id="brand-logo-upload"
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setBrandLogoFile(file);
-                        }}
+                        onChange={(e) => handleFileChange(e.target.files?.[0], 'logo')}
                         disabled={generating}
                         className="hidden"
                       />
@@ -274,7 +318,7 @@ export default function GenerateVideo() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setBrandLogoFile(null)}
+                          onClick={() => handleRemoveFile('logo')}
                           disabled={generating}
                           className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
@@ -308,10 +352,7 @@ export default function GenerateVideo() {
                         id="product-image-upload"
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setProductImageFile(file);
-                        }}
+                        onChange={(e) => handleFileChange(e.target.files?.[0], 'product')}
                         disabled={generating}
                         className="hidden"
                       />
@@ -333,7 +374,7 @@ export default function GenerateVideo() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setProductImageFile(null)}
+                          onClick={() => handleRemoveFile('product')}
                           disabled={generating}
                           className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
@@ -343,6 +384,50 @@ export default function GenerateVideo() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="space-y-4 p-6 rounded-lg border bg-card">
+                <div className="flex items-center justify-between">
+                  <Label>Brand Colors</Label>
+                  {extractingColors && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Extracting colors...
+                    </span>
+                  )}
+                </div>
+                
+                {suggestedColors.length > 0 && (
+                  <div className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Palette className="h-4 w-4" />
+                        Suggested Colors from Image
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddSuggestedColors}
+                        disabled={generating}
+                      >
+                        Add All
+                      </Button>
+                    </div>
+                    <ColorDisplay
+                      colors={suggestedColors}
+                      onRemoveColor={() => {}}
+                      showRemove={false}
+                    />
+                  </div>
+                )}
+
+                <ColorPicker onAddColor={handleAddColor} disabled={generating} />
+                <ColorDisplay 
+                  colors={brandColors} 
+                  onRemoveColor={handleRemoveColor}
+                  disabled={generating}
+                />
               </div>
 
               <Button

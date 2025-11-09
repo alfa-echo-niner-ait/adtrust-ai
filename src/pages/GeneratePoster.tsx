@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Upload, X, Sparkles, Maximize2, Loader2 } from "lucide-react";
+import { Upload, X, Sparkles, Maximize2, Loader2, Palette } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ColorPicker } from "@/components/ColorPicker";
 import { ColorDisplay } from "@/components/ColorDisplay";
+import { extractColorsFromImage } from "@/lib/colorExtraction";
 
 const GeneratePoster = () => {
   const navigate = useNavigate();
@@ -22,6 +23,8 @@ const GeneratePoster = () => {
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
+  const [extractingColors, setExtractingColors] = useState(false);
 
   // Pre-fill from critique results
   useEffect(() => {
@@ -32,17 +35,45 @@ const GeneratePoster = () => {
     }
   }, [location.state]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
     const file = e.target.files?.[0];
     if (file) {
       if (type === 'logo') setBrandLogoFile(file);
       else setProductImageFile(file);
+
+      // Extract colors from image
+      setExtractingColors(true);
+      try {
+        const colors = await extractColorsFromImage(file, 5);
+        setSuggestedColors(colors);
+        toast.success(`Extracted ${colors.length} colors from image`);
+      } catch (error) {
+        console.error('Error extracting colors:', error);
+        toast.error('Failed to extract colors from image');
+      } finally {
+        setExtractingColors(false);
+      }
     }
   };
 
   const clearFile = (type: 'logo' | 'product') => {
     if (type === 'logo') setBrandLogoFile(null);
     else setProductImageFile(null);
+    
+    // Clear suggested colors when all images are removed
+    if ((type === 'logo' && !productImageFile) || (type === 'product' && !brandLogoFile)) {
+      setSuggestedColors([]);
+    }
+  };
+
+  const handleAddSuggestedColors = () => {
+    const newColors = suggestedColors.filter(color => !brandColors.includes(color));
+    if (newColors.length > 0) {
+      setBrandColors([...brandColors, ...newColors]);
+      toast.success(`Added ${newColors.length} colors`);
+    } else {
+      toast.info('All suggested colors already added');
+    }
   };
 
   const handleAddColor = (color: string) => {
@@ -187,15 +218,6 @@ const GeneratePoster = () => {
             </RadioGroup>
           </div>
 
-          <div className="space-y-4 p-6 rounded-lg border bg-card">
-            <ColorPicker onAddColor={handleAddColor} disabled={generating} />
-            <ColorDisplay 
-              colors={brandColors} 
-              onRemoveColor={handleRemoveColor}
-              disabled={generating}
-            />
-          </div>
-
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label>Brand Logo (optional)</Label>
@@ -264,6 +286,50 @@ const GeneratePoster = () => {
                 </label>
               )}
             </div>
+          </div>
+
+          <div className="space-y-4 p-6 rounded-lg border bg-card">
+            <div className="flex items-center justify-between">
+              <Label>Brand Colors</Label>
+              {extractingColors && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Extracting colors...
+                </span>
+              )}
+            </div>
+            
+            {suggestedColors.length > 0 && (
+              <div className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    Suggested Colors from Image
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddSuggestedColors}
+                    disabled={generating}
+                  >
+                    Add All
+                  </Button>
+                </div>
+                <ColorDisplay
+                  colors={suggestedColors}
+                  onRemoveColor={() => {}}
+                  showRemove={false}
+                />
+              </div>
+            )}
+
+            <ColorPicker onAddColor={handleAddColor} disabled={generating} />
+            <ColorDisplay 
+              colors={brandColors} 
+              onRemoveColor={handleRemoveColor}
+              disabled={generating}
+            />
           </div>
 
           <Button

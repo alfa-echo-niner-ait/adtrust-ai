@@ -9,9 +9,10 @@ import { ColorPicker } from "@/components/ColorPicker";
 import { ColorDisplay } from "@/components/ColorDisplay";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { WorkflowProgress } from "@/components/WorkflowProgress";
-import { Sparkles, Loader2, Upload, X } from "lucide-react";
+import { Sparkles, Loader2, Upload, X, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { extractColorsFromImage } from "@/lib/colorExtraction";
 
 const AutoWorkflow = () => {
   const navigate = useNavigate();
@@ -25,8 +26,10 @@ const AutoWorkflow = () => {
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
+  const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
+  const [extractingColors, setExtractingColors] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -40,6 +43,19 @@ const AutoWorkflow = () => {
         }
       };
       reader.readAsDataURL(file);
+
+      // Extract colors from image
+      setExtractingColors(true);
+      try {
+        const colors = await extractColorsFromImage(file, 5);
+        setSuggestedColors(colors);
+        toast.success(`Extracted ${colors.length} colors from image`);
+      } catch (error) {
+        console.error('Error extracting colors:', error);
+        toast.error('Failed to extract colors from image');
+      } finally {
+        setExtractingColors(false);
+      }
     }
   };
 
@@ -50,6 +66,20 @@ const AutoWorkflow = () => {
     } else {
       setProductImage(null);
       setProductImagePreview(null);
+    }
+    // Clear suggested colors when all images are removed
+    if ((type === 'logo' && !productImage) || (type === 'product' && !brandLogo)) {
+      setSuggestedColors([]);
+    }
+  };
+
+  const handleAddSuggestedColors = () => {
+    const newColors = suggestedColors.filter(color => !brandColors.includes(color));
+    if (newColors.length > 0) {
+      setBrandColors([...brandColors, ...newColors]);
+      toast.success(`Added ${newColors.length} colors`);
+    } else {
+      toast.info('All suggested colors already added');
     }
   };
 
@@ -210,17 +240,6 @@ const AutoWorkflow = () => {
               </RadioGroup>
             </div>
 
-            <div className="space-y-3">
-              <ColorPicker onAddColor={handleAddColor} disabled={running} />
-              {brandColors.length > 0 && (
-                <ColorDisplay
-                  colors={brandColors}
-                  onRemoveColor={handleRemoveColor}
-                  showRemove={!running}
-                />
-              )}
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="logo">Brand Logo (Optional)</Label>
@@ -307,6 +326,52 @@ const AutoWorkflow = () => {
                   )}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Brand Colors</Label>
+                {extractingColors && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Extracting colors...
+                  </span>
+                )}
+              </div>
+              
+              {suggestedColors.length > 0 && (
+                <div className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Suggested Colors from Image
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddSuggestedColors}
+                      disabled={running}
+                    >
+                      Add All
+                    </Button>
+                  </div>
+                  <ColorDisplay
+                    colors={suggestedColors}
+                    onRemoveColor={() => {}}
+                    showRemove={false}
+                  />
+                </div>
+              )}
+
+              <ColorPicker onAddColor={handleAddColor} disabled={running} />
+              {brandColors.length > 0 && (
+                <ColorDisplay
+                  colors={brandColors}
+                  onRemoveColor={handleRemoveColor}
+                  showRemove={!running}
+                />
+              )}
             </div>
 
             <Button onClick={handleStart} disabled={running} className="w-full" size="lg">
