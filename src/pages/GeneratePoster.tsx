@@ -8,8 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Upload, X, Sparkles, Plus, Trash2, Palette, Maximize2, Loader2 } from "lucide-react";
+import { Upload, X, Sparkles, Maximize2, Loader2 } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { ColorPicker } from "@/components/ColorPicker";
+import { ColorDisplay } from "@/components/ColorDisplay";
 
 const GeneratePoster = () => {
   const navigate = useNavigate();
@@ -17,8 +19,6 @@ const GeneratePoster = () => {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [brandColors, setBrandColors] = useState<string[]>([]);
-  const [currentColor, setCurrentColor] = useState("#1E40AF");
-  const [hexInput, setHexInput] = useState("");
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -45,25 +45,15 @@ const GeneratePoster = () => {
     else setProductImageFile(null);
   };
 
-  const addColorFromPicker = () => {
-    if (currentColor && !brandColors.includes(currentColor)) {
-      setBrandColors([...brandColors, currentColor]);
-    }
-  };
-
-  const addColorFromHex = () => {
-    const hexPattern = /^#[0-9A-F]{6}$/i;
-    const colorValue = hexInput.startsWith("#") ? hexInput : `#${hexInput}`;
-
-    if (hexPattern.test(colorValue) && !brandColors.includes(colorValue)) {
-      setBrandColors([...brandColors, colorValue]);
-      setHexInput("");
+  const handleAddColor = (color: string) => {
+    if (!brandColors.includes(color)) {
+      setBrandColors([...brandColors, color]);
     } else {
-      toast.error("Please enter a valid HEX color code (e.g., #1E40AF)");
+      toast.error("Color already added");
     }
   };
 
-  const removeColor = (colorToRemove: string) => {
+  const handleRemoveColor = (colorToRemove: string) => {
     setBrandColors(brandColors.filter((color) => color !== colorToRemove));
   };
 
@@ -197,89 +187,13 @@ const GeneratePoster = () => {
             </RadioGroup>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              <Label>Brand Colors</Label>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="colorPicker">Color Picker</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="colorPicker"
-                    type="color"
-                    value={currentColor}
-                    onChange={(e) => setCurrentColor(e.target.value)}
-                    disabled={generating}
-                    className="h-10 w-20 cursor-pointer"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addColorFromPicker}
-                    disabled={generating}
-                    className="flex-1"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Color
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="hexInput">Or Enter HEX</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="hexInput"
-                    placeholder="#1E40AF"
-                    value={hexInput}
-                    onChange={(e) => setHexInput(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && addColorFromHex()}
-                    disabled={generating}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addColorFromHex}
-                    disabled={generating}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {brandColors.length > 0 && (
-              <div className="space-y-2">
-                <Label>Selected Colors</Label>
-                <div className="flex flex-wrap gap-2">
-                  {brandColors.map((color, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card"
-                    >
-                      <div
-                        className="w-6 h-6 rounded border-2 border-border"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="text-sm font-mono">{color}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => removeColor(color)}
-                        disabled={generating}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="space-y-4 p-6 rounded-lg border bg-card">
+            <ColorPicker onAddColor={handleAddColor} disabled={generating} />
+            <ColorDisplay 
+              colors={brandColors} 
+              onRemoveColor={handleRemoveColor}
+              disabled={generating}
+            />
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">

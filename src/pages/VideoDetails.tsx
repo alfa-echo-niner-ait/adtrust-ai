@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Calendar, Image, Sparkles, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { ColorDisplay } from "@/components/ColorDisplay";
 
 interface VideoDetails {
   id: string;
@@ -182,22 +183,14 @@ const VideoDetails = () => {
 
             {video.brand_colors && (
               <div>
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Palette className="h-4 w-4" />
                   Brand Colors
                 </h3>
-                <div className="flex gap-2 flex-wrap">
-                  {video.brand_colors.split(', ').map((color) => (
-                    <div key={color} className="flex items-center gap-2">
-                      <div
-                        className="w-8 h-8 rounded border-2 border-border"
-                        style={{ backgroundColor: color }}
-                        title={color}
-                      />
-                      <span className="text-xs text-muted-foreground font-mono">{color}</span>
-                    </div>
-                  ))}
-                </div>
+                <ColorDisplay 
+                  colors={video.brand_colors.split(', ')} 
+                  showRemove={false}
+                />
               </div>
             )}
 

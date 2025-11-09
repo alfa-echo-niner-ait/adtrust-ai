@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Video, Upload, Plus, X, Trash2 } from 'lucide-react';
+import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Loader2, Video, Upload, Trash2 } from 'lucide-react';
+import { ColorPicker } from '@/components/ColorPicker';
+import { ColorDisplay } from '@/components/ColorDisplay';
 import { useCritique } from '@/hooks/useCritique';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
@@ -20,8 +22,6 @@ export default function CritiqueAnalysis() {
   const [mediaUrl, setMediaUrl] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [brandColors, setBrandColors] = useState<string[]>([]);
-  const [currentColor, setCurrentColor] = useState('#1E40AF');
-  const [hexInput, setHexInput] = useState('');
   const [caption, setCaption] = useState('');
   
   const { loading, error, result, runCritique } = useCritique();
@@ -50,29 +50,19 @@ export default function CritiqueAnalysis() {
     }
   };
 
-  const addColorFromPicker = () => {
-    if (currentColor && !brandColors.includes(currentColor)) {
-      setBrandColors([...brandColors, currentColor]);
-    }
-  };
-
-  const addColorFromHex = () => {
-    const hexPattern = /^#[0-9A-F]{6}$/i;
-    const colorValue = hexInput.startsWith('#') ? hexInput : `#${hexInput}`;
-    
-    if (hexPattern.test(colorValue) && !brandColors.includes(colorValue)) {
-      setBrandColors([...brandColors, colorValue]);
-      setHexInput('');
+  const handleAddColor = (color: string) => {
+    if (!brandColors.includes(color)) {
+      setBrandColors([...brandColors, color]);
     } else {
       toast({
-        title: "Invalid Color",
-        description: "Please enter a valid HEX color code (e.g., #1E40AF)",
+        title: "Color Already Added",
+        description: "This color is already in your palette",
         variant: "destructive",
       });
     }
   };
 
-  const removeColor = (colorToRemove: string) => {
+  const handleRemoveColor = (colorToRemove: string) => {
     setBrandColors(brandColors.filter(color => color !== colorToRemove));
   };
 
@@ -249,87 +239,12 @@ export default function CritiqueAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Brand Colors */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Brand Colors</Label>
-                
-                {/* Color Picker */}
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={currentColor}
-                    onChange={(e) => setCurrentColor(e.target.value)}
-                    disabled={loading}
-                    className="w-14 h-10 cursor-pointer p-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addColorFromPicker}
-                    disabled={loading}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                </div>
-
-                {/* HEX Input */}
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    placeholder="#1E40AF"
-                    value={hexInput}
-                    onChange={(e) => setHexInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addColorFromHex())}
-                    disabled={loading}
-                    className="font-mono text-sm"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addColorFromHex}
-                    disabled={loading}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Selected Colors */}
-                {brandColors.length > 0 ? (
-                  <div className="space-y-2 p-3 rounded-lg bg-secondary/30 border border-border">
-                    <p className="text-xs font-medium text-muted-foreground">Selected ({brandColors.length})</p>
-                    <div className="flex flex-wrap gap-2">
-                      {brandColors.map((color) => (
-                        <div
-                          key={color}
-                          className="group relative"
-                        >
-                          <div
-                            className="w-10 h-10 rounded-md border-2 border-border shadow-sm cursor-pointer hover:scale-110 transition-transform"
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeColor(color)}
-                            disabled={loading}
-                            className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-0.5"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center py-4 border border-dashed rounded-lg">
-                    No colors added yet
-                  </p>
-                )}
-              </div>
+              <ColorPicker onAddColor={handleAddColor} disabled={loading} />
+              <ColorDisplay 
+                colors={brandColors} 
+                onRemoveColor={handleRemoveColor}
+                disabled={loading}
+              />
             </CardContent>
           </Card>
         </div>

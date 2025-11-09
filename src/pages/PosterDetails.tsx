@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Calendar, Image, Palette, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { ColorDisplay } from "@/components/ColorDisplay";
 
 interface PosterDetails {
   id: string;
@@ -182,11 +183,14 @@ const PosterDetails = () => {
 
             {poster.brand_colors && (
               <div>
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Palette className="h-4 w-4" />
                   Brand Colors
                 </h3>
-                <p className="text-muted-foreground">{poster.brand_colors}</p>
+                <ColorDisplay 
+                  colors={poster.brand_colors.split(', ')} 
+                  showRemove={false}
+                />
               </div>
             )}
 
