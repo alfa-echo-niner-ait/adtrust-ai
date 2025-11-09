@@ -20,37 +20,33 @@ def generate_video():
     errors = validate_generation_request(data)
     if errors:
         return jsonify({'error': 'Validation failed', 'details': errors}), 400
-        
+    
     # Create video record
     video_id = str(uuid.uuid4())
     video = GeneratedVideo(
         id=video_id,
         prompt=data['prompt'],
-        brand_logo_url=data.get('brandLogoUrl'),
-        product_image_url=data.get('productImageUrl'),
-        brand_colors=','.join(data.get('brandColors', [])),
+        brand_logo_url=data.get('brandLogo'),
+        product_image_url=data.get('productImage'),
+        brand_colors=data.get('brandColors'),
         aspect_ratio=data.get('aspectRatio', '16:9'),
         status='pending'
     )
+    
     db.session.add(video)
     db.session.commit()
     
-    current_app.logger.info(f'Starting video generation request: {video_id}')
+    current_app.logger.info(f'Created video generation request: {video_id}')
     
-    try:
-        # Trigger sync generation
-        video_service = VideoService()
-        generated_video = video_service.generate(video_id, data)
-        
-        if not generated_video:
-            raise Exception("Video generation returned no result.")
-
-        current_app.logger.info(f'Finished video generation request: {video_id}')
-        
-        return jsonify(generated_video.to_dict()), 201
-    except Exception as e:
-        current_app.logger.error(f"Video generation failed for {video_id}: {e}")
-        return jsonify({'error': 'Video generation failed', 'details': str(e)}), 500
+    # Trigger async generation
+    video_service = VideoService()
+    video_service.generate_async(video_id, data)
+    
+    return jsonify({
+        'success': True,
+        'videoId': video_id,
+        'status': 'pending'
+    }), 201
 
 
 @video_bp.route('/<video_id>', methods=['GET'])

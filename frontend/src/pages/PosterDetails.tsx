@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,13 +27,19 @@ const PosterDetails = () => {
   const [poster, setPoster] = useState<PosterDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadPosterDetails = useCallback(async () => {
+  useEffect(() => {
+    loadPosterDetails();
+  }, [id]);
+
+  const loadPosterDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/poster/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch poster details');
-      }
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("generated_posters")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
       setPoster(data);
     } catch (error) {
       console.error("Error loading poster:", error);
@@ -40,13 +47,7 @@ const PosterDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      loadPosterDetails();
-    }
-  }, [id, loadPosterDetails]);
+  };
 
   const handleDownload = async () => {
     if (!poster?.poster_url) return;

@@ -1,9 +1,10 @@
 """Main application factory."""
 import os
+import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import config
-from extensions import db, init_supabase
+from extensions import db
 from utils.logger import setup_logger
 
 
@@ -21,7 +22,6 @@ def create_app(config_name=None):
     
     # Initialize extensions
     db.init_app(app)
-    init_supabase(app)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     
     # Register blueprints
@@ -30,16 +30,12 @@ def create_app(config_name=None):
     from api.critique import critique_bp
     from api.workflow import workflow_bp
     from api.health import health_bp
-    from api.approval import approval_bp
-    from api.upload import upload_bp
     
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(poster_bp, url_prefix='/api/poster')
     app.register_blueprint(video_bp, url_prefix='/api/video')
     app.register_blueprint(critique_bp, url_prefix='/api/critique')
     app.register_blueprint(workflow_bp, url_prefix='/api/workflow')
-    app.register_blueprint(approval_bp, url_prefix='/api/approval')
-    app.register_blueprint(upload_bp, url_prefix='/api')
     
     # Error handlers
     @app.errorhandler(400)

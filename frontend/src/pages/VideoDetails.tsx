@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,13 +27,19 @@ const VideoDetails = () => {
   const [video, setVideo] = useState<VideoDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadVideoDetails = useCallback(async () => {
+  useEffect(() => {
+    loadVideoDetails();
+  }, [id]);
+
+  const loadVideoDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/video/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch video details');
-      }
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("generated_videos")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
       setVideo(data);
     } catch (error) {
       console.error("Error loading video:", error);
@@ -40,13 +47,7 @@ const VideoDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      loadVideoDetails();
-    }
-  }, [id, loadVideoDetails]);
+  };
 
   const handleDownload = async () => {
     if (!video?.video_url) return;

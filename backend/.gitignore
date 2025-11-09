@@ -4,7 +4,8 @@ __pycache__/
 *$py.class
 *.so
 .Python
-.venv
+env/
+venv/
 ENV/
 build/
 develop-eggs/
@@ -28,7 +29,6 @@ instance/
 
 # Environment
 .env
-.env.example
 .env.local
 .env.*.local
 

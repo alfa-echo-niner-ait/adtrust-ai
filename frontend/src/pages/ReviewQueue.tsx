@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,20 +23,6 @@ interface ContentItem {
   };
 }
 
-interface ApiContentItem {
-  id: string;
-  video_url?: string;
-  poster_url?: string;
-  prompt: string;
-  approval_status: string;
-  created_at: string;
-  critique?: {
-    brand_fit_score: number;
-    visual_quality_score: number;
-    safety_score: number;
-  };
-}
-
 const ReviewQueue = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<ContentItem[]>([]);
@@ -50,44 +37,74 @@ const ReviewQueue = () => {
     try {
       setLoading(true);
 
-      const videoResponse = await fetch('http://localhost:5000/api/video');
-      const posterResponse = await fetch('http://localhost:5000/api/poster');
+      const { data: videos, error: videosError } = await supabase
+        .from("generated_videos")
+        .select(`
+          id,
+          video_url,
+          prompt,
+          approval_status,
+          created_at,
+          critique_id,
+          critiques (
+            brand_fit_score,
+            visual_quality_score,
+            safety_score
+          )
+        `)
+        .not("video_url", "is", null)
+        .order("created_at", { ascending: false });
 
-      if (!videoResponse.ok || !posterResponse.ok) {
-        throw new Error('Failed to fetch content');
-      }
+      if (videosError) throw videosError;
 
-      const videoData = await videoResponse.json();
-      const posterData = await posterResponse.json();
+      const { data: posters, error: postersError } = await supabase
+        .from("generated_posters")
+        .select(`
+          id,
+          poster_url,
+          prompt,
+          approval_status,
+          created_at,
+          critique_id,
+          critiques (
+            brand_fit_score,
+            visual_quality_score,
+            safety_score
+          )
+        `)
+        .not("poster_url", "is", null)
+        .order("created_at", { ascending: false });
 
-      const videoItems: ContentItem[] = (videoData.videos || []).map((v: ApiContentItem) => ({
+      if (postersError) throw postersError;
+
+      const videoItems: ContentItem[] = (videos || []).map((v: any) => ({
         id: v.id,
         type: "video" as const,
-        mediaUrl: v.video_url || '',
+        mediaUrl: v.video_url,
         prompt: v.prompt,
         approvalStatus: v.approval_status || "pending_review",
         createdAt: v.created_at,
-        critiqueScores: v.critique
+        critiqueScores: v.critiques
           ? {
-              brandFit: v.critique.brand_fit_score,
-              visualQuality: v.critique.visual_quality_score,
-              safety: v.critique.safety_score,
+              brandFit: v.critiques.brand_fit_score,
+              visualQuality: v.critiques.visual_quality_score,
+              safety: v.critiques.safety_score,
             }
           : undefined,
       }));
 
-      const posterItems: ContentItem[] = (posterData.posters || []).map((p: ApiContentItem) => ({
+      const posterItems: ContentItem[] = (posters || []).map((p: any) => ({
         id: p.id,
         type: "poster" as const,
-        mediaUrl: p.poster_url || '',
+        mediaUrl: p.poster_url,
         prompt: p.prompt,
         approvalStatus: p.approval_status || "pending_review",
         createdAt: p.created_at,
-        critiqueScores: p.critique
+        critiqueScores: p.critiques
           ? {
-              brandFit: p.critique.brand_fit_score,
-              visualQuality: p.critique.visual_quality_score,
-              safety: p.critique.safety_score,
+              brandFit: p.critiques.brand_fit_score,
+              visualQuality: p.critiques.visual_quality_score,
+              safety: p.critiques.safety_score,
             }
           : undefined,
       }));
@@ -172,7 +189,7 @@ const ReviewQueue = () => {
           <CardDescription>Review and approve generated ads</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as "all" | "pending" | "approved" | "rejected")} className="space-y-6">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="space-y-6">
             <TabsList>
               <TabsTrigger value="all">All ({items.length})</TabsTrigger>
               <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>

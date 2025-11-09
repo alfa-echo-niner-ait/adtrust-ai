@@ -1,6 +1,6 @@
 """Application configuration."""
 import os
-# from sqlalchemy.pool import NullPool
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,16 +13,8 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     FLASK_APP = os.getenv('FLASK_APP', 'app.py')
     
-    # Fetch variables
-    USER = os.getenv("user")
-    PASSWORD = os.getenv("password")
-    HOST = os.getenv("host")
-    PORT = os.getenv("port")
-    DBNAME = os.getenv("dbname")
-
-    # Construct the SQLAlchemy connection string
-    # DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
-    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
+    # Database
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://localhost/adtrust_db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
@@ -33,7 +25,7 @@ class Config:
     # Supabase
     SUPABASE_URL = os.getenv('SUPABASE_URL')
     SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-    SUPABASE_STORAGE_BUCKET = os.getenv('SUPABASE_STORAGE_BUCKET', 'files')
+    SUPABASE_STORAGE_BUCKET = os.getenv('SUPABASE_STORAGE_BUCKET', 'video-assets')
     
     # File Upload
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 52428800))  # 50MB
@@ -53,7 +45,7 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
-    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_ECHO = True
 
 
 class ProductionConfig(Config):

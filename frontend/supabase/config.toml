@@ -1,0 +1,13 @@
+project_id = "kjdfcjkverczjrtnuqpw"
+
+[functions.critique-with-google]
+verify_jwt = false
+
+[functions.generate-video-google]
+verify_jwt = false
+
+[functions.generate-poster-google]
+verify_jwt = false
+
+[functions.auto-workflow]
+verify_jwt = false

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Copy, CheckChe
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { DetailedScoreBreakdown } from '@/components/DetailedScoreBreakdown';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { Breadcrumb } from '@/components/Breadcrumb';
 
 interface CritiqueData {
@@ -19,17 +20,8 @@ interface CritiqueData {
   message_clarity_score?: number;
   tone_of_voice_score?: number;
   safety_score: number;
-  brand_validation?: {
-    color_match_percentage: number;
-    logo_present: boolean;
-    logo_correct: boolean;
-    overall_consistency: number;
-  };
-  safety_breakdown?: {
-    harmful_content: number;
-    stereotypes: number;
-    misleading_claims: number;
-  };
+  brand_validation?: any;
+  safety_breakdown?: any;
   critique_summary: string;
   refinement_prompt: string;
   created_at: string;
@@ -43,14 +35,22 @@ export default function CritiqueResults() {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const loadCritique = useCallback(async () => {
+  useEffect(() => {
+    if (id) {
+      loadCritique();
+    }
+  }, [id]);
+
+  const loadCritique = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/critique/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch critique results');
-      }
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from('critiques')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
       setCritique(data);
     } catch (error) {
       console.error('Error loading critique:', error);
@@ -62,13 +62,7 @@ export default function CritiqueResults() {
     } finally {
       setLoading(false);
     }
-  }, [id, toast]);
-
-  useEffect(() => {
-    if (id) {
-      loadCritique();
-    }
-  }, [id, loadCritique]);
+  };
 
   const handleCopyPrompt = async () => {
     if (critique?.refinement_prompt) {

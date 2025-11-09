@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { usePoster } from "@/hooks/usePoster";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,7 @@ const GeneratePoster = () => {
   const [brandColors, setBrandColors] = useState<string[]>([]);
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
-  const { loading: generating, error, result, generatePoster } = usePoster();
+  const [generating, setGenerating] = useState(false);
   const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
   const [extractingColors, setExtractingColors] = useState(false);
 
@@ -33,44 +34,6 @@ const GeneratePoster = () => {
       if (location.state.aspectRatio) setAspectRatio(location.state.aspectRatio);
     }
   }, [location.state]);
-
-  useEffect(() => {
-    if (result) {
-      console.log('Poster generation result:', result);
-      toast.success("Poster generation started!");
-      navigate(`/poster/${result.id}`);
-    }
-    if (error) {
-      toast.error(error);
-      // Clean up uploaded files if generation fails
-      const uploadedUrls = [
-        localStorage.getItem('brandLogoUrl'),
-        localStorage.getItem('productImageUrl')
-      ].filter(Boolean);
-
-      if (uploadedUrls.length > 0) {
-        uploadedUrls.forEach(url => {
-          if (url) deleteFile(url);
-        });
-        localStorage.removeItem('brandLogoUrl');
-        localStorage.removeItem('productImageUrl');
-      }
-    }
-  }, [result, error, navigate]);
-
-  const deleteFile = async (fileUrl: string) => {
-    try {
-      await fetch('http://localhost:5000/api/delete_file', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ file_url: fileUrl }),
-      });
-    } catch (error) {
-      console.error('Error deleting file:', error);
-    }
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
     const file = e.target.files?.[0];
@@ -115,10 +78,6 @@ const GeneratePoster = () => {
   };
 
   const handleAddColor = (color: string) => {
-    if (!/^#[0-9a-fA-F]{6}$/.test(color) && !/^#[0-9a-fA-F]{3}$/.test(color)) {
-      toast.error("Invalid color format. Please use a valid hex code.");
-      return;
-    }
     if (!brandColors.includes(color)) {
       setBrandColors([...brandColors, color]);
     } else {
@@ -130,51 +89,77 @@ const GeneratePoster = () => {
     setBrandColors(brandColors.filter((color) => color !== colorToRemove));
   };
 
+  const uploadFile = async (file: File, path: string) => {
+    const { data, error } = await supabase.storage
+      .from("video-assets")
+      .upload(path, file, { upsert: true });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("video-assets")
+      .getPublicUrl(data.path);
+
+    return publicUrl;
+  };
+
   const handleGeneratePoster = async () => {
-    if (!prompt.trim() || prompt.trim().length < 10) {
-      toast.error("Please enter a prompt of at least 10 characters.");
+    if (!prompt.trim()) {
+      toast.error("Please enter a prompt");
       return;
     }
 
-    let brandLogoUrl = null;
-    let productImageUrl = null;
-
-    if (brandLogoFile) {
-      brandLogoUrl = await uploadFile(brandLogoFile);
-    }
-
-    if (productImageFile) {
-      productImageUrl = await uploadFile(productImageFile);
-    }
-
-    await generatePoster({
-      prompt,
-      brandColors,
-      aspectRatio,
-      brandLogoUrl,
-      productImageUrl,
-    });
-  };
-
-  const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+    setGenerating(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (response.status >= 400) {
-        throw new Error(data.error || 'File upload failed');
+      let brandLogoUrl = null;
+      let productImageUrl = null;
+
+      if (brandLogoFile) {
+        brandLogoUrl = await uploadFile(brandLogoFile, `logos/${Date.now()}-${brandLogoFile.name}`);
       }
-      console.log('File uploaded to:', data.url);
-      return data.url;
+
+      if (productImageFile) {
+        productImageUrl = await uploadFile(productImageFile, `products/${Date.now()}-${productImageFile.name}`);
+      }
+
+      const { data: posterData, error: insertError } = await supabase
+        .from("generated_posters")
+        .insert({
+        prompt,
+        brand_logo_url: brandLogoUrl,
+        product_image_url: productImageUrl,
+        brand_colors: brandColors.join(", "),
+        aspect_ratio: aspectRatio,
+        status: "pending",
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      toast.success("Poster generation started!");
+      
+      // Call edge function to generate poster
+      const { error: functionError } = await supabase.functions.invoke("generate-poster-google", {
+        body: {
+          posterId: posterData.id,
+          prompt,
+          brandLogo: brandLogoUrl,
+          productImage: productImageUrl,
+          brandColors: brandColors.join(", "),
+          aspectRatio,
+        },
+      });
+
+      if (functionError) throw functionError;
+
+      navigate(`/poster/${posterData.id}`);
     } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error((error as Error).message || 'File upload failed');
-      return null;
+      console.error("Error generating poster:", error);
+      toast.error("Failed to generate poster");
+    } finally {
+      setGenerating(false);
     }
   };
 

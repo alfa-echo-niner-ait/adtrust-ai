@@ -26,32 +26,27 @@ def generate_poster():
     poster = GeneratedPoster(
         id=poster_id,
         prompt=data['prompt'],
-        brand_logo_url=data.get('brandLogoUrl'),
-        product_image_url=data.get('productImageUrl'),
-        brand_colors=','.join(data.get('brandColors', [])),
+        brand_logo_url=data.get('brandLogo'),
+        product_image_url=data.get('productImage'),
+        brand_colors=data.get('brandColors'),
         aspect_ratio=data.get('aspectRatio', '1:1'),
-        status='pending'  # Status is pending during generation
+        status='pending'
     )
     
     db.session.add(poster)
     db.session.commit()
     
-    current_app.logger.info(f'Starting poster generation request: {poster_id}')
+    current_app.logger.info(f'Created poster generation request: {poster_id}')
     
-    try:
-        # Trigger sync generation
-        poster_service = PosterService()
-        generated_poster = poster_service.generate(poster_id, data)
-        
-        if not generated_poster:
-            raise Exception("Poster generation returned no result.")
-
-        current_app.logger.info(f'Finished poster generation request: {poster_id}')
-        
-        return jsonify(generated_poster.to_dict()), 201
-    except Exception as e:
-        current_app.logger.error(f"Poster generation failed for {poster_id}: {e}")
-        return jsonify({'error': 'Poster generation failed', 'details': str(e)}), 500
+    # Trigger async generation
+    poster_service = PosterService()
+    poster_service.generate_async(poster_id, data)
+    
+    return jsonify({
+        'success': True,
+        'posterId': poster_id,
+        'status': 'pending'
+    }), 201
 
 
 @poster_bp.route('/<poster_id>', methods=['GET'])

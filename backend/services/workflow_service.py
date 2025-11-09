@@ -22,81 +22,79 @@ class WorkflowService:
     
     def run_async(self, workflow_id: str):
         """Trigger async workflow execution."""
-        app = current_app._get_current_object()
         thread = threading.Thread(
             target=self._run_workflow,
-            args=(app, workflow_id,)
+            args=(workflow_id,)
         )
         thread.daemon = True
         thread.start()
     
-    def _run_workflow(self, app, workflow_id: str):
+    def _run_workflow(self, workflow_id: str):
         """Execute multi-agent workflow."""
-        with app.app_context():
-            try:
-                workflow = WorkflowRun.query.get(workflow_id)
-                if not workflow:
-                    raise Exception(f'Workflow not found: {workflow_id}')
+        try:
+            workflow = WorkflowRun.query.get(workflow_id)
+            if not workflow:
+                raise Exception(f'Workflow not found: {workflow_id}')
+            
+            iteration = 0
+            current_prompt = workflow.prompt
+            best_scores = {}
+            generated_content_id = None
+            
+            while iteration < self.max_iterations:
+                current_app.logger.info(f'Workflow {workflow_id} - Iteration {iteration + 1}')
                 
-                iteration = 0
-                current_prompt = workflow.prompt
-                best_scores = {}
-                generated_content_id = None
+                # Step 1: Generate content
+                self._update_workflow_step(workflow_id, 'generating', iteration)
+                content_id = self._generate_content(workflow, current_prompt)
                 
-                while iteration < self.max_iterations:
-                    current_app.logger.info(f'Workflow {workflow_id} - Iteration {iteration + 1}')
-                    
-                    # Step 1: Generate content
-                    self._update_workflow_step(workflow_id, 'generating', iteration)
-                    content_id = self._generate_content(workflow, current_prompt)
-                    
-                    if not content_id:
-                        raise Exception('Content generation failed')
-                    
-                    generated_content_id = content_id
-                    
-                    # Wait for generation
-                    media_url = self._wait_for_generation(workflow.content_type, content_id)
-                    if not media_url:
-                        raise Exception('Generation timeout or failed')
-                    
-                    # Step 2: Critique content
-                    self._update_workflow_step(workflow_id, 'critiquing', iteration)
-                    critique_result = self._critique_content(workflow, media_url, current_prompt)
-                    
-                    best_scores = {
-                        'brand_fit_score': critique_result.brand_fit_score,
-                        'visual_quality_score': critique_result.visual_quality_score,
-                        'message_clarity_score': critique_result.message_clarity_score,
-                        'tone_of_voice_score': critique_result.tone_of_voice_score,
-                        'safety_score': critique_result.safety_score
-                    }
-                    
-                    # Calculate average score
-                    avg_score = sum(best_scores.values()) / len(best_scores)
-                    
-                    if avg_score >= self.target_score:
-                        current_app.logger.info(f'Target score achieved: {avg_score:.2f}')
-                        self._finalize_workflow(workflow_id, 'completed', generated_content_id, critique_result.id, iteration + 1, best_scores)
-                        return
-                    
-                    # Step 3: Refine for next iteration
-                    if iteration < self.max_iterations - 1 and critique_result.refinement_prompt:
-                        self._update_workflow_step(workflow_id, 'refining', iteration)
-                        current_prompt = critique_result.refinement_prompt
-                    
-                    iteration += 1
+                if not content_id:
+                    raise Exception('Content generation failed')
                 
-                # Max iterations reached
-                self._finalize_workflow(workflow_id, 'completed', generated_content_id, critique_result.id, iteration, best_scores)
+                generated_content_id = content_id
                 
-            except Exception as e:
-                current_app.logger.error(f'Workflow error: {e}')
-                workflow = WorkflowRun.query.get(workflow_id)
-                if workflow:
-                    workflow.status = 'failed'
-                    workflow.error_message = str(e)
-                    db.session.commit()
+                # Wait for generation
+                media_url = self._wait_for_generation(workflow.content_type, content_id)
+                if not media_url:
+                    raise Exception('Generation timeout or failed')
+                
+                # Step 2: Critique content
+                self._update_workflow_step(workflow_id, 'critiquing', iteration)
+                critique_result = self._critique_content(workflow, media_url, current_prompt)
+                
+                best_scores = {
+                    'brand_fit_score': critique_result.brand_fit_score,
+                    'visual_quality_score': critique_result.visual_quality_score,
+                    'message_clarity_score': critique_result.message_clarity_score,
+                    'tone_of_voice_score': critique_result.tone_of_voice_score,
+                    'safety_score': critique_result.safety_score
+                }
+                
+                # Calculate average score
+                avg_score = sum(best_scores.values()) / len(best_scores)
+                
+                if avg_score >= self.target_score:
+                    current_app.logger.info(f'Target score achieved: {avg_score:.2f}')
+                    self._finalize_workflow(workflow_id, 'completed', generated_content_id, critique_result.id, iteration + 1, best_scores)
+                    return
+                
+                # Step 3: Refine for next iteration
+                if iteration < self.max_iterations - 1 and critique_result.refinement_prompt:
+                    self._update_workflow_step(workflow_id, 'refining', iteration)
+                    current_prompt = critique_result.refinement_prompt
+                
+                iteration += 1
+            
+            # Max iterations reached
+            self._finalize_workflow(workflow_id, 'completed', generated_content_id, critique_result.id, iteration, best_scores)
+            
+        except Exception as e:
+            current_app.logger.error(f'Workflow error: {e}')
+            workflow = WorkflowRun.query.get(workflow_id)
+            if workflow:
+                workflow.status = 'failed'
+                workflow.error_message = str(e)
+                db.session.commit()
     
     def _update_workflow_step(self, workflow_id: str, step: str, iteration: int):
         """Update workflow progress."""

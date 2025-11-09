@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Sparkles, Video, FileText, RefreshCw, ExternalLink } from "lucide-react";
+import { CheckCircle2, Circle, Sparkles, Video, FileText, RefreshCw, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WorkflowProgressProps {
   workflowId: string;
@@ -16,13 +17,7 @@ interface WorkflowRun {
   content_type: string;
   prompt: string;
   iteration_count: number;
-  final_scores: {
-    brand_fit_score?: number;
-    visual_quality_score?: number;
-    message_clarity_score?: number;
-    tone_of_voice_score?: number;
-    safety_score?: number;
-  } | null;
+  final_scores: any;
   error_message: string | null;
   created_at: string;
   generated_content_id: string | null;
@@ -33,47 +28,76 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
   const [contentUrl, setContentUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const loadGeneratedContent = useCallback(async (contentType: string, contentId: string) => {
-    const endpoint = contentType === "video" ? `video/${contentId}` : `poster/${contentId}`;
-    try {
-      const response = await fetch(`http://localhost:5000/api/${endpoint}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch generated content');
-      }
-      const data = await response.json();
-      const urlField = contentType === "video" ? "video_url" : "poster_url";
-      setContentUrl(data[urlField]);
-    } catch (error) {
-      console.error("Error loading content:", error);
-    }
-  }, []);
-
-  const loadWorkflow = useCallback(async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/workflow/${workflowId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch workflow status');
-      }
-      const data = await response.json();
-      setWorkflow(data);
-
-      if (data.status === "completed" && data.generated_content_id) {
-        loadGeneratedContent(data.content_type, data.generated_content_id);
-      }
-    } catch (error) {
-      console.error("Error loading workflow:", error);
-    }
-  }, [workflowId, loadGeneratedContent]);
-
   useEffect(() => {
-    const interval = setInterval(() => {
-      loadWorkflow();
-    }, 5000); // Poll every 5 seconds
+    loadWorkflow();
 
-    loadWorkflow(); // Initial load
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('workflow-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'workflow_runs',
+          filter: `id=eq.${workflowId}`,
+        },
+        (payload) => {
+          const updatedWorkflow = payload.new as WorkflowRun;
+          setWorkflow(updatedWorkflow);
+          
+          // Load content if workflow completed
+          if (updatedWorkflow.status === "completed" && updatedWorkflow.generated_content_id) {
+            loadGeneratedContent(updatedWorkflow.content_type, updatedWorkflow.generated_content_id);
+          }
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(interval);
-  }, [workflowId, loadWorkflow]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workflowId]);
+
+  const loadWorkflow = async () => {
+    const { data, error } = await supabase
+      .from("workflow_runs")
+      .select("*")
+      .eq("id", workflowId)
+      .single();
+
+    if (error) {
+      console.error("Error loading workflow:", error);
+      return;
+    }
+
+    setWorkflow(data);
+    
+    // Load content if workflow already completed
+    if (data.status === "completed" && data.generated_content_id) {
+      loadGeneratedContent(data.content_type, data.generated_content_id);
+    }
+  };
+
+  const loadGeneratedContent = async (contentType: string, contentId: string) => {
+    const table = contentType === "video" ? "generated_videos" : "generated_posters";
+    const urlField = contentType === "video" ? "video_url" : "poster_url";
+    
+    const { data, error } = await supabase
+      .from(table)
+      .select(urlField)
+      .eq("id", contentId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading content:", error);
+      return;
+    }
+
+    if (data) {
+      setContentUrl(data[urlField]);
+    }
+  };
 
   const steps = [
     { id: "generating", label: "Generating Content", icon: workflow?.content_type === "video" ? Video : Sparkles },
