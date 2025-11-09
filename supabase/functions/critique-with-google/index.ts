@@ -51,40 +51,55 @@ serve(async (req) => {
       ? brandColors.join(', ') 
       : brandColors;
 
-    // Construct the prompt with strong emphasis on brand requirements
-    const systemPrompt = `You are an expert AI brand compliance and ad critique specialist. 
-Analyze the provided ad media (image or video) and caption against the brand guidelines.
+    // Construct comprehensive critique prompt with all 5 scoring dimensions
+    const systemPrompt = `You are an expert brand and creative director evaluating AI-generated ads. 
+Analyze the provided ad creative and provide a comprehensive critique based on these brand guidelines:
 
-BRAND REQUIREMENTS:
-- Required Brand Colors: ${formattedColors}
-  IMPORTANT: Check if these EXACT colors are prominently used in the design. Score lower if brand colors are missing or not dominant.
-- Ad Caption/Message: ${caption}
+Brand Colors: ${formattedColors}
+Caption/Message: ${caption}
 
-Evaluate the ad across these dimensions (score 0.0-1.0):
+Evaluate the following aspects with precision:
 
-1. Brand Fit Score (0.0-1.0): 
-   - Are the brand colors (${formattedColors}) ACTUALLY visible and dominant in the design?
-   - Does the visual identity match the brand requirements?
-   - Is the messaging consistent with the caption?
-   - Score 0.6 or lower if brand colors are not prominently featured
+1. BRAND ALIGNMENT (0-1): How well does the visual content match the provided brand colors? Does it use the correct logo? Is the overall aesthetic on-brand?
 
-2. Visual Quality Score (0.0-1.0):
-   - Is the composition professional and well-balanced?
-   - Is it clear, high-resolution, and visually appealing?
-   - Does it have good contrast and readability?
+2. VISUAL QUALITY (0-1): Assess composition, clarity, professionalism, absence of artifacts, watermarks, or blurriness
 
-3. Safety Score (0.0-1.0):
-   - Does it avoid harmful stereotypes, misleading claims, or offensive content?
-   - Is it appropriate for general audiences?
-   - Does it follow advertising ethics?
+3. MESSAGE CLARITY (0-1): Is the product/service obvious? Is the tagline/caption clear and correct? Can viewers immediately understand what's being advertised?
 
-Provide your response in the following JSON format:
+4. TONE OF VOICE (0-1): Does the messaging style, language, and overall communication match the expected brand voice? Is it appropriate for the target audience?
+
+5. SAFETY & ETHICS (0-1): Check for harmful content, stereotypes, misleading claims, or any unsafe elements
+
+6. BRAND VALIDATION: Compare the generated content against provided brand assets:
+   - Calculate what percentage of the provided brand colors are actually present in the ad
+   - Check if a logo is visible and appears correct
+   - Assess overall brand consistency
+
+7. SAFETY BREAKDOWN: Provide granular safety analysis:
+   - Harmful content detection (violence, adult content, etc.)
+   - Stereotype detection (racial, gender, age-based stereotypes)
+   - Misleading claims detection (false promises, exaggerations)
+
+Return ONLY a JSON object with this exact structure:
 {
   "BrandFit_Score": 0.85,
   "VisualQuality_Score": 0.92,
-  "Safety_Score": 0.78,
-  "Critique_Summary": "A detailed 2-3 sentence summary highlighting: 1) whether brand colors are present and visible, 2) logo/product usage, 3) overall quality and areas for improvement",
-  "Refinement_Prompt_Suggestion": "A detailed prompt for regenerating the ad that EXPLICITLY states: Use these exact brand colors: ${formattedColors}. Include specific instructions about color usage, logo placement, and product presentation."
+  "MessageClarity_Score": 0.88,
+  "ToneOfVoice_Score": 0.90,
+  "Safety_Score": 0.95,
+  "BrandValidation": {
+    "color_match_percentage": 75,
+    "logo_present": true,
+    "logo_correct": true,
+    "overall_consistency": 0.82
+  },
+  "SafetyBreakdown": {
+    "harmful_content": 1.0,
+    "stereotypes": 1.0,
+    "misleading_claims": 0.9
+  },
+  "Critique_Summary": "Detailed explanation covering all dimensions, highlighting strengths and areas for improvement",
+  "Refinement_Prompt_Suggestion": "Specific actionable suggestions to improve the ad in the next generation, explicitly mentioning brand colors: ${formattedColors}"
 }`;
 
     // Call Google Gemini API with vision

@@ -62,7 +62,13 @@ async function runWorkflow(supabase: any, workflowId: string) {
 
     let iteration = 0;
     let currentPrompt = workflow.prompt;
-    let bestScores = { brand_fit_score: 0, visual_quality_score: 0, safety_score: 0 };
+    let bestScores = { 
+      brand_fit_score: 0, 
+      visual_quality_score: 0, 
+      message_clarity_score: 0,
+      tone_of_voice_score: 0,
+      safety_score: 0 
+    };
     let generatedContentId = null;
 
     while (iteration < MAX_ITERATIONS) {
@@ -112,7 +118,7 @@ async function runWorkflow(supabase: any, workflowId: string) {
       // Get critique scores
       const { data: critique } = await supabase
         .from("critiques")
-        .select("brand_fit_score, visual_quality_score, safety_score, refinement_prompt")
+        .select("brand_fit_score, visual_quality_score, message_clarity_score, tone_of_voice_score, safety_score, refinement_prompt")
         .eq("id", critiqueId)
         .single();
 
@@ -120,17 +126,23 @@ async function runWorkflow(supabase: any, workflowId: string) {
         bestScores = {
           brand_fit_score: critique.brand_fit_score,
           visual_quality_score: critique.visual_quality_score,
+          message_clarity_score: critique.message_clarity_score,
+          tone_of_voice_score: critique.tone_of_voice_score,
           safety_score: critique.safety_score,
         };
 
-        // Check if scores meet target
-        const allScoresGood = 
-          critique.brand_fit_score >= TARGET_SCORE &&
-          critique.visual_quality_score >= TARGET_SCORE &&
-          critique.safety_score >= TARGET_SCORE;
+        // Check if scores meet target (average of all 5 scores)
+        const avgScore = (
+          critique.brand_fit_score +
+          critique.visual_quality_score +
+          (critique.message_clarity_score || 0) +
+          (critique.tone_of_voice_score || 0) +
+          critique.safety_score
+        ) / 5;
 
-        if (allScoresGood) {
-          console.log(`Target scores achieved at iteration ${iteration + 1}`);
+        if (avgScore >= TARGET_SCORE) {
+          console.log(`Target score achieved at iteration ${iteration + 1}: ${avgScore.toFixed(2)}`);
+          
           
           // Update content with critique link and auto-approve
           const table = workflow.content_type === "video" ? "generated_videos" : "generated_posters";
@@ -323,7 +335,11 @@ async function critiqueContent(
       brand_colors: brandColors || "",
       brand_fit_score: critiqueResult.BrandFit_Score || 0,
       visual_quality_score: critiqueResult.VisualQuality_Score || 0,
+      message_clarity_score: critiqueResult.MessageClarity_Score || 0,
+      tone_of_voice_score: critiqueResult.ToneOfVoice_Score || 0,
       safety_score: critiqueResult.Safety_Score || 0,
+      brand_validation: critiqueResult.BrandValidation || null,
+      safety_breakdown: critiqueResult.SafetyBreakdown || null,
       critique_summary: critiqueResult.Critique_Summary || "",
       refinement_prompt: critiqueResult.Refinement_Prompt_Suggestion || "",
     })

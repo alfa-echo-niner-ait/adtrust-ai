@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Copy, CheckCheck, ArrowLeft, Video, ImageIcon as PosterIcon } from 'lucide-react';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
+import { DetailedScoreBreakdown } from '@/components/DetailedScoreBreakdown';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Breadcrumb } from '@/components/Breadcrumb';
@@ -16,7 +17,11 @@ interface CritiqueData {
   caption: string;
   brand_fit_score: number;
   visual_quality_score: number;
+  message_clarity_score?: number;
+  tone_of_voice_score?: number;
   safety_score: number;
+  brand_validation?: any;
+  safety_breakdown?: any;
   critique_summary: string;
   refinement_prompt: string;
   created_at: string;
@@ -141,35 +146,18 @@ export default function CritiqueResults() {
           </div>
         </div>
 
-        {/* Scores */}
-        <Card className="border-border shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Scorecard
-            </CardTitle>
-            <CardDescription>AI-powered analysis of your ad</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <ScoreIndicator
-                score={critique.brand_fit_score}
-                label="Brand Fit"
-                icon={<Palette className="h-4 w-4" />}
-              />
-              <ScoreIndicator
-                score={critique.visual_quality_score}
-                label="Visual Quality"
-                icon={<ImageIcon className="h-4 w-4" />}
-              />
-              <ScoreIndicator
-                score={critique.safety_score}
-                label="Safety & Ethics"
-                icon={<Shield className="h-4 w-4" />}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Detailed Score Breakdown */}
+        <DetailedScoreBreakdown
+          scores={{
+            brand_fit_score: critique.brand_fit_score,
+            visual_quality_score: critique.visual_quality_score,
+            message_clarity_score: critique.message_clarity_score,
+            tone_of_voice_score: critique.tone_of_voice_score,
+            safety_score: critique.safety_score,
+          }}
+          brandValidation={critique.brand_validation}
+          safetyBreakdown={critique.safety_breakdown}
+        />
 
         {/* Critique Summary */}
         <Card className="border-border shadow-lg">

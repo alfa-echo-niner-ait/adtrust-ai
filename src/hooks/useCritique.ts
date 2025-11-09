@@ -13,7 +13,20 @@ export interface CritiqueInput {
 export interface CritiqueResult {
   BrandFit_Score: number;
   VisualQuality_Score: number;
+  MessageClarity_Score?: number;
+  ToneOfVoice_Score?: number;
   Safety_Score: number;
+  BrandValidation?: {
+    color_match_percentage: number;
+    logo_present: boolean;
+    logo_correct: boolean;
+    overall_consistency: number;
+  };
+  SafetyBreakdown?: {
+    harmful_content: number;
+    stereotypes: number;
+    misleading_claims: number;
+  };
   Critique_Summary: string;
   Refinement_Prompt_Suggestion: string;
 }
@@ -54,7 +67,11 @@ export function useCritique() {
       const result: CritiqueResult = {
         BrandFit_Score: critiqueData.BrandFit_Score,
         VisualQuality_Score: critiqueData.VisualQuality_Score,
+        MessageClarity_Score: critiqueData.MessageClarity_Score,
+        ToneOfVoice_Score: critiqueData.ToneOfVoice_Score,
         Safety_Score: critiqueData.Safety_Score,
+        BrandValidation: critiqueData.BrandValidation,
+        SafetyBreakdown: critiqueData.SafetyBreakdown,
         Critique_Summary: critiqueData.Critique_Summary,
         Refinement_Prompt_Suggestion: critiqueData.Refinement_Prompt_Suggestion,
       };
@@ -71,7 +88,11 @@ export function useCritique() {
           caption: input.caption,
           brand_fit_score: result.BrandFit_Score,
           visual_quality_score: result.VisualQuality_Score,
+          message_clarity_score: result.MessageClarity_Score,
+          tone_of_voice_score: result.ToneOfVoice_Score,
           safety_score: result.Safety_Score,
+          brand_validation: result.BrandValidation,
+          safety_breakdown: result.SafetyBreakdown,
           critique_summary: result.Critique_Summary,
           refinement_prompt: result.Refinement_Prompt_Suggestion,
           source_type: input.sourceType || 'manual',

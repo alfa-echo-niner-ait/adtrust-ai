@@ -382,7 +382,7 @@ export default function CritiqueAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                 <ScoreIndicator
                   score={result.BrandFit_Score}
                   label="Brand Fit"
@@ -393,6 +393,20 @@ export default function CritiqueAnalysis() {
                   label="Visual Quality"
                   icon={<ImageIcon className="h-4 w-4" />}
                 />
+                {result.MessageClarity_Score !== undefined && (
+                  <ScoreIndicator
+                    score={result.MessageClarity_Score}
+                    label="Message Clarity"
+                    icon={<FileText className="h-4 w-4" />}
+                  />
+                )}
+                {result.ToneOfVoice_Score !== undefined && (
+                  <ScoreIndicator
+                    score={result.ToneOfVoice_Score}
+                    label="Tone of Voice"
+                    icon={<Sparkles className="h-4 w-4" />}
+                  />
+                )}
                 <ScoreIndicator
                   score={result.Safety_Score}
                   label="Safety & Ethics"

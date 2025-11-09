@@ -179,7 +179,7 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
         {workflow.final_scores && (
           <div className="border-t pt-4 space-y-4">
             <p className="text-sm font-medium mb-3">Final Scores</p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">
                   {(workflow.final_scores.brand_fit_score || 0).toFixed(1)}
@@ -191,6 +191,18 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
                   {(workflow.final_scores.visual_quality_score || 0).toFixed(1)}
                 </p>
                 <p className="text-xs text-muted-foreground">Visual Quality</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">
+                  {(workflow.final_scores.message_clarity_score || 0).toFixed(1)}
+                </p>
+                <p className="text-xs text-muted-foreground">Message Clarity</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">
+                  {(workflow.final_scores.tone_of_voice_score || 0).toFixed(1)}
+                </p>
+                <p className="text-xs text-muted-foreground">Tone of Voice</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">

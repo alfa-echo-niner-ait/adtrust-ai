@@ -48,46 +48,58 @@ export type Database = {
         Row: {
           brand_colors: string
           brand_fit_score: number | null
+          brand_validation: Json | null
           caption: string
           created_at: string | null
           critique_summary: string | null
           id: string
           media_type: string
           media_url: string
+          message_clarity_score: number | null
           refinement_prompt: string | null
+          safety_breakdown: Json | null
           safety_score: number | null
           source_id: string | null
           source_type: string | null
+          tone_of_voice_score: number | null
           visual_quality_score: number | null
         }
         Insert: {
           brand_colors: string
           brand_fit_score?: number | null
+          brand_validation?: Json | null
           caption: string
           created_at?: string | null
           critique_summary?: string | null
           id?: string
           media_type?: string
           media_url: string
+          message_clarity_score?: number | null
           refinement_prompt?: string | null
+          safety_breakdown?: Json | null
           safety_score?: number | null
           source_id?: string | null
           source_type?: string | null
+          tone_of_voice_score?: number | null
           visual_quality_score?: number | null
         }
         Update: {
           brand_colors?: string
           brand_fit_score?: number | null
+          brand_validation?: Json | null
           caption?: string
           created_at?: string | null
           critique_summary?: string | null
           id?: string
           media_type?: string
           media_url?: string
+          message_clarity_score?: number | null
           refinement_prompt?: string | null
+          safety_breakdown?: Json | null
           safety_score?: number | null
           source_id?: string | null
           source_type?: string | null
+          tone_of_voice_score?: number | null
           visual_quality_score?: number | null
         }
         Relationships: []
