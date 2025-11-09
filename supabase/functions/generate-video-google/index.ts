@@ -22,7 +22,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { videoId, prompt, brandLogo, productImage, aspectRatio = "16:9" } = await req.json();
+    const { videoId, prompt, brandLogo, productImage, brandColors, aspectRatio = "16:9" } = await req.json();
 
     if (!videoId || !prompt) {
       return new Response(
@@ -31,16 +31,36 @@ serve(async (req) => {
       );
     }
 
-    console.log('Generating video with Google Veo:', { videoId, prompt, brandLogo, productImage, aspectRatio });
+    console.log('Generating video with Google Veo:', { videoId, prompt, brandLogo, productImage, brandColors, aspectRatio });
 
-    // Enhance the prompt with brand assets context
-    let enhancedPrompt = prompt;
-    if (brandLogo || productImage) {
-      enhancedPrompt += `\n\nBrand Assets Context:`;
-      if (brandLogo) enhancedPrompt += `\n- Brand Logo: ${brandLogo}`;
-      if (productImage) enhancedPrompt += `\n- Product Image: ${productImage}`;
-      enhancedPrompt += `\n\nEnsure the video incorporates these brand elements naturally.`;
+    // Build enhanced prompt with explicit brand requirements
+    let enhancedPrompt = `Create a professional advertising video with these requirements:
+
+${prompt}
+
+CRITICAL REQUIREMENTS:`;
+
+    if (brandColors) {
+      const colors = typeof brandColors === 'string' ? brandColors : brandColors.join(', ');
+      enhancedPrompt += `\n- PRIMARY REQUIREMENT: Use ONLY these exact brand colors throughout the video: ${colors}. These colors must be prominent and visible.`;
     }
+
+    if (brandLogo) {
+      enhancedPrompt += `\n- CRITICAL: Incorporate the brand logo (reference: ${brandLogo}) prominently in the video. Display it clearly and professionally.`;
+    }
+
+    if (productImage) {
+      enhancedPrompt += `\n- CRITICAL: Feature the product (reference: ${productImage}) as the focal point of the video advertisement.`;
+    }
+
+    enhancedPrompt += `\n\nVideo specifications:
+- Aspect ratio: ${aspectRatio}
+- Style: Modern, professional, engaging
+- Duration: Short format (15-30 seconds ideal)
+- Quality: High-resolution, suitable for commercial advertising
+- Pacing: Dynamic but clear messaging
+
+Make it visually compelling and ready for commercial use.`;
 
     // Call Google's Imagen 3 for video generation
     // Note: As of now, Google's video generation API (Veo) is in limited preview

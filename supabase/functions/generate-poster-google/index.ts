@@ -20,19 +20,90 @@ serve(async (req) => {
 
     console.log("Generating poster for:", posterId);
 
-    // Enhance prompt with brand assets
-    let enhancedPrompt = prompt;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    
+    // Build enhanced prompt with explicit instructions
+    let enhancedPrompt = `Create a professional advertising poster with these requirements:
+
+${prompt}
+
+CRITICAL REQUIREMENTS:
+`;
+
     if (brandColors) {
-      enhancedPrompt += `\nBrand Colors: ${brandColors}`;
-    }
-    if (brandLogo) {
-      enhancedPrompt += `\nInclude brand logo from: ${brandLogo}`;
-    }
-    if (productImage) {
-      enhancedPrompt += `\nInclude product image from: ${productImage}`;
+      const colors = typeof brandColors === 'string' ? brandColors : brandColors.join(', ');
+      enhancedPrompt += `- PRIMARY REQUIREMENT: Use ONLY these exact brand colors as the main color palette: ${colors}. These colors must be dominant and visible throughout the design.\n`;
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    // Prepare content array with text and images
+    const contentParts: any[] = [{ type: "text", text: enhancedPrompt }];
+
+    // Helper function to safely convert to base64
+    const toBase64 = (buffer: ArrayBuffer): string => {
+      const uint8Array = new Uint8Array(buffer);
+      let binaryString = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize);
+        binaryString += String.fromCharCode(...chunk);
+      }
+      return btoa(binaryString);
+    };
+
+    // Fetch and include brand logo if provided
+    if (brandLogo) {
+      try {
+        const logoResponse = await fetch(brandLogo);
+        const logoBuffer = await logoResponse.arrayBuffer();
+        const logoBase64 = toBase64(logoBuffer);
+        const logoMimeType = logoResponse.headers.get('content-type') || 'image/png';
+        
+        contentParts.push({
+          type: "image_url",
+          image_url: { url: `data:${logoMimeType};base64,${logoBase64}` }
+        });
+        
+        contentParts.push({
+          type: "text",
+          text: "- CRITICAL: Include the brand logo shown above prominently in the poster design. Position it professionally (top corner or center based on design).\n"
+        });
+      } catch (error) {
+        console.error("Error fetching brand logo:", error);
+      }
+    }
+
+    // Fetch and include product image if provided
+    if (productImage) {
+      try {
+        const productResponse = await fetch(productImage);
+        const productBuffer = await productResponse.arrayBuffer();
+        const productBase64 = toBase64(productBuffer);
+        const productMimeType = productResponse.headers.get('content-type') || 'image/png';
+        
+        contentParts.push({
+          type: "image_url",
+          image_url: { url: `data:${productMimeType};base64,${productBase64}` }
+        });
+        
+        contentParts.push({
+          type: "text",
+          text: "- CRITICAL: Feature the product shown above as the focal point of the advertisement.\n"
+        });
+      } catch (error) {
+        console.error("Error fetching product image:", error);
+      }
+    }
+
+    contentParts.push({
+      type: "text",
+      text: `\nDesign specifications:
+- Aspect ratio: ${aspectRatio}
+- Style: Modern, professional, eye-catching
+- Quality: High-resolution, suitable for advertising
+- Composition: Balanced layout with clear visual hierarchy
+
+Make it visually stunning and ready for commercial use.`
+    });
     
     // Call Lovable AI with Gemini model for image generation
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -46,11 +117,10 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: `Create a professional poster/image ad with the following requirements:\n${enhancedPrompt}\n\nMake it visually stunning, modern, and suitable for advertising. Use aspect ratio ${aspectRatio}.`,
+            content: contentParts,
           },
         ],
         modalities: ["image", "text"],
-        aspectRatio: aspectRatio,
       }),
     });
 

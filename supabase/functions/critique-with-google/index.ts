@@ -46,25 +46,45 @@ serve(async (req) => {
       ? 'video/mp4' 
       : mediaResponse.headers.get('content-type') || 'image/jpeg';
 
-    // Construct the prompt
+    // Format brand colors for emphasis
+    const formattedColors = Array.isArray(brandColors) 
+      ? brandColors.join(', ') 
+      : brandColors;
+
+    // Construct the prompt with strong emphasis on brand requirements
     const systemPrompt = `You are an expert AI brand compliance and ad critique specialist. 
 Analyze the provided ad media (image or video) and caption against the brand guidelines.
 
-Brand Colors: ${brandColors}
-Ad Caption: ${caption}
+BRAND REQUIREMENTS:
+- Required Brand Colors: ${formattedColors}
+  IMPORTANT: Check if these EXACT colors are prominently used in the design. Score lower if brand colors are missing or not dominant.
+- Ad Caption/Message: ${caption}
 
-Evaluate the ad across these dimensions:
-1. Brand Fit (0.0-1.0): How well does the ad align with brand colors, visual identity, and messaging?
-2. Visual Quality (0.0-1.0): Is the composition professional? Is it clear and high-resolution?
-3. Safety & Ethics (0.0-1.0): Does it avoid harmful stereotypes, misleading claims, or offensive content?
+Evaluate the ad across these dimensions (score 0.0-1.0):
+
+1. Brand Fit Score (0.0-1.0): 
+   - Are the brand colors (${formattedColors}) ACTUALLY visible and dominant in the design?
+   - Does the visual identity match the brand requirements?
+   - Is the messaging consistent with the caption?
+   - Score 0.6 or lower if brand colors are not prominently featured
+
+2. Visual Quality Score (0.0-1.0):
+   - Is the composition professional and well-balanced?
+   - Is it clear, high-resolution, and visually appealing?
+   - Does it have good contrast and readability?
+
+3. Safety Score (0.0-1.0):
+   - Does it avoid harmful stereotypes, misleading claims, or offensive content?
+   - Is it appropriate for general audiences?
+   - Does it follow advertising ethics?
 
 Provide your response in the following JSON format:
 {
   "BrandFit_Score": 0.85,
   "VisualQuality_Score": 0.92,
   "Safety_Score": 0.78,
-  "Critique_Summary": "A detailed 2-3 sentence summary of the ad's strengths and areas for improvement",
-  "Refinement_Prompt_Suggestion": "A detailed prompt for regenerating the ad with specific improvements"
+  "Critique_Summary": "A detailed 2-3 sentence summary highlighting: 1) whether brand colors are present and visible, 2) logo/product usage, 3) overall quality and areas for improvement",
+  "Refinement_Prompt_Suggestion": "A detailed prompt for regenerating the ad that EXPLICITLY states: Use these exact brand colors: ${formattedColors}. Include specific instructions about color usage, logo placement, and product presentation."
 }`;
 
     // Call Google Gemini API with vision
