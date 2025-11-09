@@ -1,19 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X, Maximize2 } from 'lucide-react';
+import { Video, Loader2, Image as ImageIcon, Save, Eye, Upload, X, Maximize2, Palette, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function GenerateVideo() {
+  const location = useLocation();
   const [videoPrompt, setVideoPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [brandColors, setBrandColors] = useState<string[]>([]);
+  const [currentColor, setCurrentColor] = useState('#1E40AF');
+  const [hexInput, setHexInput] = useState('');
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -21,6 +25,41 @@ export default function GenerateVideo() {
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Pre-fill from critique results
+  useEffect(() => {
+    if (location.state) {
+      if (location.state.prompt) setVideoPrompt(location.state.prompt);
+      if (location.state.brandColors) setBrandColors(location.state.brandColors);
+      if (location.state.aspectRatio) setAspectRatio(location.state.aspectRatio);
+    }
+  }, [location.state]);
+
+  const addColorFromPicker = () => {
+    if (currentColor && !brandColors.includes(currentColor)) {
+      setBrandColors([...brandColors, currentColor]);
+    }
+  };
+
+  const addColorFromHex = () => {
+    const hexPattern = /^#[0-9A-F]{6}$/i;
+    const colorValue = hexInput.startsWith('#') ? hexInput : `#${hexInput}`;
+    
+    if (hexPattern.test(colorValue) && !brandColors.includes(colorValue)) {
+      setBrandColors([...brandColors, colorValue]);
+      setHexInput('');
+    } else {
+      toast({
+        title: "Invalid Color",
+        description: "Please enter a valid HEX color code",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeColor = (colorToRemove: string) => {
+    setBrandColors(brandColors.filter(color => color !== colorToRemove));
+  };
 
   const uploadFile = async (file: File, type: 'logo' | 'product'): Promise<string> => {
     const fileExt = file.name.split('.').pop();
@@ -70,6 +109,7 @@ export default function GenerateVideo() {
           prompt: videoPrompt,
           brand_logo_url: finalBrandLogoUrl || null,
           product_image_url: finalProductImageUrl || null,
+          brand_colors: brandColors.length > 0 ? brandColors.join(', ') : null,
           aspect_ratio: aspectRatio,
           status: 'pending'
         })
@@ -184,6 +224,84 @@ export default function GenerateVideo() {
                     <Label htmlFor="video-ratio-9-16" className="cursor-pointer font-normal">9:16 Vertical</Label>
                   </div>
                 </RadioGroup>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-primary" />
+                  Brand Colors (Optional)
+                </Label>
+                
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={currentColor}
+                    onChange={(e) => setCurrentColor(e.target.value)}
+                    disabled={generating}
+                    className="w-14 h-10 cursor-pointer p-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addColorFromPicker}
+                    disabled={generating}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="#1E40AF"
+                    value={hexInput}
+                    onChange={(e) => setHexInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addColorFromHex())}
+                    disabled={generating}
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addColorFromHex}
+                    disabled={generating}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {brandColors.length > 0 ? (
+                  <div className="space-y-2 p-3 rounded-lg bg-secondary/30 border border-border">
+                    <p className="text-xs font-medium text-muted-foreground">Selected ({brandColors.length})</p>
+                    <div className="flex flex-wrap gap-2">
+                      {brandColors.map((color) => (
+                        <div key={color} className="group relative">
+                          <div
+                            className="w-10 h-10 rounded-md border-2 border-border shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeColor(color)}
+                            disabled={generating}
+                            className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-4 border border-dashed rounded-lg">
+                    No colors added yet
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">

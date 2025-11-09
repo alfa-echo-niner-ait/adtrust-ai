@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, Calendar, Image, Palette } from "lucide-react";
+import { ArrowLeft, Download, Calendar, Image, Palette, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumb } from "@/components/Breadcrumb";
 
@@ -114,12 +114,32 @@ const PosterDetails = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
-        {poster.poster_url && poster.status === "completed" && (
-          <Button onClick={handleDownload}>
-            <Download className="mr-2 h-4 w-4" />
-            Download Poster
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {poster.poster_url && poster.status === "completed" && (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/critique', { 
+                  state: { 
+                    mediaUrl: poster.poster_url,
+                    mediaType: 'image',
+                    brandColors: poster.brand_colors ? poster.brand_colors.split(', ') : [],
+                    caption: poster.prompt,
+                    sourceType: 'generated_poster',
+                    sourceId: poster.id
+                  } 
+                })}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Critique This
+              </Button>
+              <Button onClick={handleDownload}>
+                <Download className="mr-2 h-4 w-4" />
+                Download
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <Card>

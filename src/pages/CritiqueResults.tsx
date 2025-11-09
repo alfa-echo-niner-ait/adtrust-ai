@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Copy, CheckCheck, ArrowLeft } from 'lucide-react';
+import { Shield, Sparkles, Image as ImageIcon, Palette, FileText, Copy, CheckCheck, ArrowLeft, Video, ImageIcon as PosterIcon } from 'lucide-react';
 import { ScoreIndicator } from '@/components/ScoreIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -110,6 +110,34 @@ export default function CritiqueResults() {
               Generated on {new Date(critique.created_at).toLocaleDateString()} at{' '}
               {new Date(critique.created_at).toLocaleTimeString()}
             </p>
+          </div>
+          <div className="flex gap-2">
+            {critique.media_type === 'video' && (
+              <Button 
+                onClick={() => navigate('/generate-video', { 
+                  state: { 
+                    prompt: critique.refinement_prompt,
+                    brandColors: critique.brand_colors.split(', ')
+                  } 
+                })}
+              >
+                <Video className="mr-2 h-4 w-4" />
+                Regenerate Video
+              </Button>
+            )}
+            {critique.media_type === 'image' && (
+              <Button 
+                onClick={() => navigate('/generate-poster', { 
+                  state: { 
+                    prompt: critique.refinement_prompt,
+                    brandColors: critique.brand_colors.split(', ')
+                  } 
+                })}
+              >
+                <PosterIcon className="mr-2 h-4 w-4" />
+                Regenerate Poster
+              </Button>
+            )}
           </div>
         </div>
 

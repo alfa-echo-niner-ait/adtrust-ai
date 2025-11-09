@@ -6,6 +6,8 @@ export interface CritiqueInput {
   brandColors: string;
   caption: string;
   mediaType?: string;
+  sourceType?: string;
+  sourceId?: string;
 }
 
 export interface CritiqueResult {
@@ -72,6 +74,8 @@ export function useCritique() {
           safety_score: result.Safety_Score,
           critique_summary: result.Critique_Summary,
           refinement_prompt: result.Refinement_Prompt_Suggestion,
+          source_type: input.sourceType || 'manual',
+          source_id: input.sourceId || null,
         })
         .select()
         .single();

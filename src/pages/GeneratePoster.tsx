@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 
 const GeneratePoster = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [brandColors, setBrandColors] = useState<string[]>([]);
@@ -21,6 +22,15 @@ const GeneratePoster = () => {
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
+
+  // Pre-fill from critique results
+  useEffect(() => {
+    if (location.state) {
+      if (location.state.prompt) setPrompt(location.state.prompt);
+      if (location.state.brandColors) setBrandColors(location.state.brandColors);
+      if (location.state.aspectRatio) setAspectRatio(location.state.aspectRatio);
+    }
+  }, [location.state]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'product') => {
     const file = e.target.files?.[0];

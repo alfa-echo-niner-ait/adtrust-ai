@@ -26,6 +26,8 @@ export type Database = {
           media_url: string
           refinement_prompt: string | null
           safety_score: number | null
+          source_id: string | null
+          source_type: string | null
           visual_quality_score: number | null
         }
         Insert: {
@@ -39,6 +41,8 @@ export type Database = {
           media_url: string
           refinement_prompt?: string | null
           safety_score?: number | null
+          source_id?: string | null
+          source_type?: string | null
           visual_quality_score?: number | null
         }
         Update: {
@@ -52,6 +56,8 @@ export type Database = {
           media_url?: string
           refinement_prompt?: string | null
           safety_score?: number | null
+          source_id?: string | null
+          source_type?: string | null
           visual_quality_score?: number | null
         }
         Relationships: []
@@ -101,6 +107,7 @@ export type Database = {
       generated_videos: {
         Row: {
           aspect_ratio: string | null
+          brand_colors: string | null
           brand_logo_url: string | null
           created_at: string | null
           id: string
@@ -112,6 +119,7 @@ export type Database = {
         }
         Insert: {
           aspect_ratio?: string | null
+          brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
           id?: string
@@ -123,6 +131,7 @@ export type Database = {
         }
         Update: {
           aspect_ratio?: string | null
+          brand_colors?: string | null
           brand_logo_url?: string | null
           created_at?: string | null
           id?: string

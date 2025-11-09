@@ -27,11 +27,17 @@ export default function CritiqueAnalysis() {
   const { loading, error, result, runCritique } = useCritique();
   const { toast } = useToast();
 
-  // Check if we're coming from video generation
+  // Pre-fill from generated content
   useEffect(() => {
-    if (location.state?.videoUrl) {
-      setMediaUrl(location.state.videoUrl);
-      setMediaType('video');
+    if (location.state) {
+      if (location.state.mediaUrl) setMediaUrl(location.state.mediaUrl);
+      if (location.state.mediaType) setMediaType(location.state.mediaType);
+      if (location.state.brandColors) setBrandColors(location.state.brandColors);
+      if (location.state.caption) setCaption(location.state.caption);
+      // Mark as uploaded so user can see preview
+      if (location.state.mediaUrl) {
+        setUploadedFile(new File([], "pre-filled-media"));
+      }
     }
   }, [location.state]);
 
@@ -91,7 +97,9 @@ export default function CritiqueAnalysis() {
       mediaUrl, 
       brandColors: brandColors.join(', '), 
       caption,
-      mediaType 
+      mediaType,
+      sourceType: location.state?.sourceType,
+      sourceId: location.state?.sourceId
     });
 
     if (critiqueId) {

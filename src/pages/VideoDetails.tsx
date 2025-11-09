@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, Calendar, Image } from "lucide-react";
+import { ArrowLeft, Download, Calendar, Image, Sparkles, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { Breadcrumb } from "@/components/Breadcrumb";
 
@@ -16,6 +16,8 @@ interface VideoDetails {
   status: string;
   brand_logo_url: string | null;
   product_image_url: string | null;
+  brand_colors: string | null;
+  aspect_ratio: string;
 }
 
 const VideoDetails = () => {
@@ -112,12 +114,32 @@ const VideoDetails = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
-        {video.video_url && video.status === "completed" && (
-          <Button onClick={handleDownload}>
-            <Download className="mr-2 h-4 w-4" />
-            Download Video
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {video.video_url && video.status === "completed" && (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/critique', { 
+                  state: { 
+                    mediaUrl: video.video_url,
+                    mediaType: 'video',
+                    brandColors: video.brand_colors ? video.brand_colors.split(', ') : [],
+                    caption: video.prompt,
+                    sourceType: 'generated_video',
+                    sourceId: video.id
+                  } 
+                })}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Critique This
+              </Button>
+              <Button onClick={handleDownload}>
+                <Download className="mr-2 h-4 w-4" />
+                Download
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -157,6 +179,27 @@ const VideoDetails = () => {
                 {video.prompt}
               </p>
             </div>
+
+            {video.brand_colors && (
+              <div>
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Brand Colors
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  {video.brand_colors.split(', ').map((color) => (
+                    <div key={color} className="flex items-center gap-2">
+                      <div
+                        className="w-8 h-8 rounded border-2 border-border"
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                      <span className="text-xs text-muted-foreground font-mono">{color}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {(video.brand_logo_url || video.product_image_url) && (
               <div>
