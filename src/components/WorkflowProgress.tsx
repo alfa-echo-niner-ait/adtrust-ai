@@ -25,6 +25,7 @@ interface WorkflowRun {
 
 export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
   const [workflow, setWorkflow] = useState<WorkflowRun | null>(null);
+  const [contentUrl, setContentUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,7 +43,13 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
           filter: `id=eq.${workflowId}`,
         },
         (payload) => {
-          setWorkflow(payload.new as WorkflowRun);
+          const updatedWorkflow = payload.new as WorkflowRun;
+          setWorkflow(updatedWorkflow);
+          
+          // Load content if workflow completed
+          if (updatedWorkflow.status === "completed" && updatedWorkflow.generated_content_id) {
+            loadGeneratedContent(updatedWorkflow.content_type, updatedWorkflow.generated_content_id);
+          }
         }
       )
       .subscribe();
@@ -65,6 +72,31 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
     }
 
     setWorkflow(data);
+    
+    // Load content if workflow already completed
+    if (data.status === "completed" && data.generated_content_id) {
+      loadGeneratedContent(data.content_type, data.generated_content_id);
+    }
+  };
+
+  const loadGeneratedContent = async (contentType: string, contentId: string) => {
+    const table = contentType === "video" ? "generated_videos" : "generated_posters";
+    const urlField = contentType === "video" ? "video_url" : "poster_url";
+    
+    const { data, error } = await supabase
+      .from(table)
+      .select(urlField)
+      .eq("id", contentId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading content:", error);
+      return;
+    }
+
+    if (data) {
+      setContentUrl(data[urlField]);
+    }
   };
 
   const steps = [
@@ -168,6 +200,30 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
               </div>
             </div>
             
+            {workflow.status === "completed" && contentUrl && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Generated Content</p>
+                <div className="rounded-lg overflow-hidden border bg-muted/20">
+                  {workflow.content_type === "video" ? (
+                    <video 
+                      src={contentUrl} 
+                      controls 
+                      className="w-full max-h-[400px] object-contain"
+                      preload="metadata"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <img 
+                      src={contentUrl} 
+                      alt="Generated poster" 
+                      className="w-full max-h-[400px] object-contain"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+            
             {workflow.status === "completed" && workflow.generated_content_id && (
               <Button 
                 onClick={() => {
@@ -180,7 +236,7 @@ export const WorkflowProgress = ({ workflowId }: WorkflowProgressProps) => {
                 size="lg"
               >
                 <ExternalLink className="mr-2 h-5 w-5" />
-                View Generated {workflow.content_type === "video" ? "Video" : "Poster"}
+                View Full Details
               </Button>
             )}
           </div>
