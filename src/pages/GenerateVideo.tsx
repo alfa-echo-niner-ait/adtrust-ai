@@ -113,14 +113,14 @@ export default function GenerateVideo() {
     const fileName = `${type}-${Date.now()}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('video-assets')
+      const { error: uploadError } = await supabase.storage
+      .from('files')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     const { data: { publicUrl } } = supabase.storage
-      .from('video-assets')
+      .from('files')
       .getPublicUrl(filePath);
 
     return publicUrl;

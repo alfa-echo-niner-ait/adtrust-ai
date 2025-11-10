@@ -11,7 +11,7 @@ async function uploadVideoToStorage(supabaseClient: any, videoBlob: Blob, videoI
   const fileName = `videos/${videoId}-${Date.now()}.mp4`;
   
   const { error: uploadError } = await supabaseClient.storage
-    .from('video-assets')
+    .from('files')
     .upload(fileName, videoBlob, {
       contentType: 'video/mp4',
       upsert: true
@@ -20,7 +20,7 @@ async function uploadVideoToStorage(supabaseClient: any, videoBlob: Blob, videoI
   if (uploadError) throw uploadError;
 
   const { data: { publicUrl } } = supabaseClient.storage
-    .from('video-assets')
+    .from('files')
     .getPublicUrl(fileName);
 
   return publicUrl;
@@ -53,24 +53,7 @@ serve(async (req) => {
 
     console.log('Generating video with Google Veo:', { videoId, prompt, brandLogo, productImage, brandColors, aspectRatio });
 
-    // Prepare reference images
-    const referenceImages = [];
-    
-    if (productImage) {
-      referenceImages.push({
-        referenceType: 'ASSET',
-        imageUri: productImage
-      });
-    }
-
-    if (brandLogo) {
-      referenceImages.push({
-        referenceType: 'ASSET',
-        imageUri: brandLogo
-      });
-    }
-
-    // Build enhanced prompt
+    // Build enhanced prompt with brand information
     let enhancedPrompt = `Create a professional advertising video. ${prompt}.`;
 
     if (brandColors) {
@@ -78,11 +61,19 @@ serve(async (req) => {
       enhancedPrompt += ` Use these brand colors: ${colors}.`;
     }
 
-    enhancedPrompt += ' The video should incorporate the provided images seamlessly and be visually compelling.';
+    if (brandLogo) {
+      enhancedPrompt += ' Include the brand logo prominently.';
+    }
 
-    // Call Google's Veo API for video generation
+    if (productImage) {
+      enhancedPrompt += ' Feature the product image as the main focus.';
+    }
+
+    enhancedPrompt += ' The video should be visually compelling and professional. Duration: 5-10 seconds.';
+
+    // Call Google's Veo 2 API for video generation
     const generateResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:generateVideos?key=${GOOGLE_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1alpha/models/veo-002:generateVideo?key=${GOOGLE_API_KEY}`,
       {
         method: 'POST',
         headers: {
@@ -90,12 +81,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           prompt: enhancedPrompt,
-          config: {
-            numberOfVideos: 1,
-            referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
-            resolution: '720p',
-            aspectRatio: aspectRatio === '9:16' ? '9:16' : '16:9'
-          }
+          aspectRatio: aspectRatio === '9:16' ? 'ASPECT_RATIO_9_16' : 'ASPECT_RATIO_16_9',
+          length: 'LENGTH_5S_TO_10S'
         })
       }
     );
@@ -103,24 +90,7 @@ serve(async (req) => {
     if (!generateResponse.ok) {
       const errorText = await generateResponse.text();
       console.error('Google Veo API error:', generateResponse.status, errorText);
-      
-      // Fallback to sample video
-      await supabaseClient
-        .from('generated_videos')
-        .update({
-          status: 'completed',
-          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-        })
-        .eq('id', videoId);
-
-      return new Response(
-        JSON.stringify({ 
-          message: 'Video generation API in limited preview. Using sample video.',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          status: 'completed'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+      throw new Error(`Google Veo API error: ${generateResponse.status} - ${errorText}`);
     }
 
     const operationData = await generateResponse.json();
@@ -132,36 +102,48 @@ serve(async (req) => {
 
     console.log('Video generation started, operation:', operationName);
 
-    // Poll for completion
+    // Poll for completion (max 5 minutes)
     let operation = operationData;
-    while (!operation.done) {
+    let pollCount = 0;
+    const maxPolls = 30; // 30 polls * 10 seconds = 5 minutes max
+    
+    while (!operation.done && pollCount < maxPolls) {
       await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
+      pollCount++;
       
       const pollResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${GOOGLE_API_KEY}`
+        `https://generativelanguage.googleapis.com/v1alpha/${operationName}?key=${GOOGLE_API_KEY}`
       );
 
       if (!pollResponse.ok) {
-        throw new Error('Failed to poll operation status');
+        const pollError = await pollResponse.text();
+        console.error('Poll error:', pollResponse.status, pollError);
+        throw new Error(`Failed to poll operation status: ${pollResponse.status}`);
       }
 
       operation = await pollResponse.json();
-      console.log('Operation status:', operation.done ? 'completed' : 'in progress');
+      console.log('Operation status:', operation.done ? 'completed' : 'in progress', `(poll ${pollCount}/${maxPolls})`);
     }
 
-    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-
-    if (!downloadLink) {
-      throw new Error('Video generation failed. No download link was provided.');
+    if (!operation.done) {
+      throw new Error('Video generation timed out after 5 minutes');
     }
 
-    // Download the video
-    const videoResponse = await fetch(`${downloadLink}&key=${GOOGLE_API_KEY}`);
-    if (!videoResponse.ok) {
-      throw new Error('Failed to download the generated video.');
+    const videoData = operation.response?.generatedVideo;
+    const videoBase64 = videoData?.video;
+
+    if (!videoBase64) {
+      console.error('No video data in response:', JSON.stringify(operation.response));
+      throw new Error('Video generation failed. No video data was provided.');
     }
 
-    const videoBlob = await videoResponse.blob();
+    // Convert base64 to blob
+    const binaryString = atob(videoBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const videoBlob = new Blob([bytes], { type: 'video/mp4' });
 
     // Upload to Supabase Storage
     const videoUrl = await uploadVideoToStorage(supabaseClient, videoBlob, videoId);
