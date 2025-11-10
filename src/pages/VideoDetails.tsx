@@ -96,7 +96,7 @@ const VideoDetails = () => {
     );
     
     if (success) {
-      navigate('/dashboard');
+      navigate('/');
     } else {
       setDeleting(false);
     }

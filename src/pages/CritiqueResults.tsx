@@ -97,7 +97,7 @@ export default function CritiqueResults() {
     const success = await deleteCritique(id, critique.media_url);
     
     if (success) {
-      navigate('/dashboard');
+      navigate('/');
     } else {
       setDeleting(false);
     }

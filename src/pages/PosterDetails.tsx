@@ -96,7 +96,7 @@ const PosterDetails = () => {
     );
     
     if (success) {
-      navigate('/dashboard');
+      navigate('/');
     } else {
       setDeleting(false);
     }
