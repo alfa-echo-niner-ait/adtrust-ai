@@ -62,7 +62,7 @@ export default function CritiqueResults() {
         .from('critiques')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setCritique(data);
@@ -116,7 +116,7 @@ export default function CritiqueResults() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="text-center py-16">
           <p className="text-muted-foreground mb-4">Critique not found</p>
-          <Button onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
+          <Button onClick={() => navigate('/')}>Return to Dashboard</Button>
         </div>
       </div>
     );
@@ -131,7 +131,7 @@ export default function CritiqueResults() {
           <div>
             <Button
               variant="ghost"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/')}
               className="mb-4 gap-2"
             >
               <ArrowLeft className="h-4 w-4" />

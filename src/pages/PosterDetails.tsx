@@ -51,7 +51,7 @@ const PosterDetails = () => {
         .from("generated_posters")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setPoster(data);

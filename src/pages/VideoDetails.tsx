@@ -51,7 +51,7 @@ const VideoDetails = () => {
         .from("generated_videos")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setVideo(data);
